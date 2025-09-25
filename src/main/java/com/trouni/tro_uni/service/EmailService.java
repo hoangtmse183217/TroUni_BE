@@ -30,9 +30,6 @@ public class EmailService {
     @Value("${app.mail.from:noreply@trouni.com}")
     private String fromEmail;
 
-    @Value("${app.mail.from-name:TroUni}")
-    private String fromName;
-
     /**
      * Gửi email verification code (Async)
      * <p>
@@ -176,27 +173,63 @@ public class EmailService {
     }
 
     /**
-     * Test gửi email đơn giản (Async)
+     * Gửi email reset password (Async)
      * <p>
      * @param toEmail - Email người nhận
-     * @param subject - Tiêu đề
-     * @param content - Nội dung
+     * @param resetToken - Token reset password
+     * @param username - Tên người dùng
      */
     @Async("emailTaskExecutor")
-    public void sendSimpleEmail(String toEmail, String subject, String content) {
+    public void sendPasswordResetEmail(String toEmail, String resetToken, String username) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject(subject);
-            message.setText(content);
+            message.setSubject("🔑 Reset Password - TroUni");
+            
+            String emailBody = buildPasswordResetEmailBody(username, resetToken);
+            message.setText(emailBody);
             
             mailSender.send(message);
-            log.info("Simple email sent successfully to: {}", toEmail);
+            log.info("Password reset email sent successfully to: {}", toEmail);
             
         } catch (Exception e) {
-            log.error("Failed to send simple email to {}: {}", toEmail, e.getMessage());
+            log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
             // Không throw exception để tránh rollback transaction
         }
     }
+
+    /**
+     * Xây dựng nội dung email reset password
+     * <p>
+     * @param username - Tên người dùng
+     * @param resetToken - Token reset password
+     * @return String - Nội dung email
+     */
+    private String buildPasswordResetEmailBody(String username, String resetToken) {
+        return String.format("""
+            🎯 Xin chào %s!
+            
+            Chúng tôi nhận được yêu cầu reset mật khẩu cho tài khoản TroUni của bạn.
+            
+            📝 Mã reset password của bạn là: %s
+            
+            ⏰ Mã này có hiệu lực trong 15 phút.
+            
+            🔒 Nếu bạn không yêu cầu reset mật khẩu, vui lòng bỏ qua email này.
+            
+            💡 Để bảo mật tài khoản:
+            - Không chia sẻ mã này với bất kỳ ai
+            - Sử dụng mật khẩu mạnh
+            - Đăng xuất khỏi các thiết bị không tin cậy
+            
+            Chúc bạn có trải nghiệm tốt với TroUni!
+            
+            ---
+            Trân trọng,
+            Đội ngũ TroUni
+            Email: %s
+            """, username, resetToken, fromEmail);
+    }
+
 }

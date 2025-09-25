@@ -1,7 +1,6 @@
 package com.trouni.tro_uni.exception;
 
-import com.trouni.tro_uni.dto.ApiResponse;
-import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
+import com.trouni.tro_uni.dto.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,13 +15,13 @@ import java.util.Objects;
 
 /**
  * GlobalExceptionHandler - Xử lý exception toàn cục cho ứng dụng
- * 
+
  * Chức năng chính:
  * - Bắt và xử lý tất cả exception trong ứng dụng
  * - Chuyển đổi exception thành response format chuẩn
  * - Log lỗi để debug
  * - Trả về response phù hợp cho từng loại lỗi
- * 
+
  * @author TroUni Team
  * @version 1.0
  */
@@ -32,7 +31,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Xử lý AppException - Exception tùy chỉnh của ứng dụng
-     * 
+
      * AppException chứa ErrorCode với thông tin chi tiết về lỗi
      * Sử dụng ErrorCode để xác định status code và message phù hợp
      * 
@@ -50,7 +49,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Xử lý AccessDeniedException - Khi user không có quyền truy cập
-     * 
+
      * Thường xảy ra khi:
      * - User chưa đăng nhập
      * - User không có role phù hợp
@@ -70,7 +69,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Xử lý MethodArgumentNotValidException - Lỗi validation input
-     * 
+
      * Thường xảy ra khi:
      * - @Valid annotation validation fail
      * - Required field bị thiếu
@@ -93,7 +92,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Xử lý SQLException - Lỗi database
-     * 
+
      * Thường xảy ra khi:
      * - Connection database bị lỗi
      * - Query SQL không hợp lệ
@@ -114,7 +113,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Xử lý JwtException - Lỗi JWT token
-     * 
+
      * Thường xảy ra khi:
      * - Token không hợp lệ
      * - Token hết hạn
@@ -132,7 +131,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Xử lý Exception - Catch-all cho các exception khác
-     * 
+
      * Xử lý tất cả exception không được handle bởi các method trên
      * Trả về generic error response để tránh expose internal error
      * 

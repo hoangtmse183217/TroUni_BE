@@ -8,13 +8,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * EmailVerificationRepository - Repository cho EmailVerification entity
- *
+
  * Chức năng chính:
  * - CRUD operations cho EmailVerification
  * - Tìm kiếm theo email và user
@@ -28,47 +27,12 @@ import java.util.UUID;
 public interface EmailVerificationRepository extends JpaRepository<EmailVerification, UUID> {
 
     /**
-     * Tìm EmailVerification theo email và chưa verify
+     * Tìm EmailVerification theo email
      *
      * @param email - Email cần tìm
      * @return Optional<EmailVerification> - EmailVerification nếu tìm thấy
      */
-    Optional<EmailVerification> findByEmailAndIsVerifiedFalse(String email);
-
-    /**
-     * Tìm EmailVerification theo email và user
-     *
-     * @param email - Email cần tìm
-     * @param userId - ID của user
-     * @return Optional<EmailVerification> - EmailVerification nếu tìm thấy
-     */
-    Optional<EmailVerification> findByEmailAndUserId(String email, UUID userId);
-
-    /**
-     * Tìm EmailVerification theo email, user và chưa verify
-     *
-     * @param email - Email cần tìm
-     * @param userId - ID của user
-     * @return Optional<EmailVerification> - EmailVerification nếu tìm thấy
-     */
-    Optional<EmailVerification> findByEmailAndUserIdAndIsVerifiedFalse(String email, UUID userId);
-
-    /**
-     * Tìm tất cả EmailVerification chưa verify của một user
-     *
-     * @param userId - ID của user
-     * @return List<EmailVerification> - Danh sách EmailVerification
-     */
-    List<EmailVerification> findByUserIdAndIsVerifiedFalse(UUID userId);
-
-    /**
-     * Kiểm tra email đã được verify chưa
-     *
-     * @param email - Email cần kiểm tra
-     * @return boolean - true nếu đã verify
-     */
-    @Query("SELECT COUNT(e) > 0 FROM EmailVerification e WHERE e.email = :email AND e.isVerified = true")
-    boolean existsByEmailAndIsVerifiedTrue(@Param("email") String email);
+    Optional<EmailVerification> findByEmail(String email);
 
     /**
      * Đếm số lần thử verify của một email trong 1 giờ
@@ -91,38 +55,39 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     int deleteExpiredVerifications(@Param("now") LocalDateTime now);
 
     /**
-     * Xóa tất cả EmailVerification chưa verify của một user
-     *
-     * @param userId - ID của user
-     * @return int - Số lượng records đã xóa
-     */
-    @Modifying
-    @Query("DELETE FROM EmailVerification e WHERE e.user.id = :userId AND e.isVerified = false")
-    int deleteUnverifiedByUserId(@Param("userId") UUID userId);
-
-    /**
      * Xóa tất cả EmailVerification chưa verify của một email
      *
      * @param email - Email cần xóa
-     * @return int - Số lượng records đã xóa
      */
     @Modifying
     @Query("DELETE FROM EmailVerification e WHERE e.email = :email AND e.isVerified = false")
-    int deleteUnverifiedByEmail(@Param("email") String email);
+    void deleteUnverifiedByEmail(@Param("email") String email);
 
     /**
-     * Tìm EmailVerification theo verification code
+     * Tìm EmailVerification theo verification code và type
      *
      * @param code - Mã xác thực
+     * @param type - Loại verification (PASSWORD_RESET, EMAIL_VERIFICATION)
      * @return Optional<EmailVerification> - EmailVerification nếu tìm thấy
      */
-    Optional<EmailVerification> findByVerificationCode(String code);
+    Optional<EmailVerification> findByVerificationCodeAndType(String code, String type);
 
     /**
-     * Tìm EmailVerification theo verification code và chưa verify
+     * Xóa password reset tokens của một user
+     *
+     * @param userId - ID của user
+     */
+    @Modifying
+    @Query("DELETE FROM EmailVerification e WHERE e.user.id = :userId AND e.type = 'PASSWORD_RESET'")
+    void deletePasswordResetTokensByUserId(@Param("userId") UUID userId);
+
+    /**
+     * Xóa EmailVerification theo verification code và type
      *
      * @param code - Mã xác thực
-     * @return Optional<EmailVerification> - EmailVerification nếu tìm thấy
+     * @param type - Loại verification
      */
-    Optional<EmailVerification> findByVerificationCodeAndIsVerifiedFalse(String code);
+    @Modifying
+    @Query("DELETE FROM EmailVerification e WHERE e.verificationCode = :code AND e.type = :type")
+    void deleteByVerificationCodeAndType(@Param("code") String code, @Param("type") String type);
 }

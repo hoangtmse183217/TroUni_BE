@@ -1,7 +1,8 @@
-package com.trouni.tro_uni.dto;
+package com.trouni.tro_uni.dto.response;
 
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.UserRole;
+import com.trouni.tro_uni.enums.AccountStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,6 +34,8 @@ public class UserResponse {
     private UserRole role;
     private boolean phoneVerified;
     private String idVerificationStatus;
+    private boolean googleAccount;
+    private AccountStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -51,6 +54,8 @@ public class UserResponse {
                 .phoneVerified(user.isPhoneVerified())
                 .idVerificationStatus(user.getIdVerificationStatus() != null ? 
                     user.getIdVerificationStatus().toString() : null)
+                .googleAccount(user.isGoogleAccount())
+                .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

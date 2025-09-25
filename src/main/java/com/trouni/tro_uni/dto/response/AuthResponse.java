@@ -1,28 +1,23 @@
-package com.trouni.tro_uni.dto;
+package com.trouni.tro_uni.dto.response;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthResponse {
     
     private String token;
+    @Builder.Default
     private String type = "Bearer";
     private UUID id;
     private String username;
     private String email;
     private String role;
-    
-    public AuthResponse(String token, UUID id, String username, String email, String role) {
-        this.token = token;
-        this.id = id;
-        this.username = username;
-        this.email = email;
-        this.role = role;
-    }
 }

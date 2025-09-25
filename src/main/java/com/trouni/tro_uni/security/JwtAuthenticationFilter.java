@@ -21,7 +21,7 @@ import java.io.IOException;
 
 /**
  * JwtAuthenticationFilter - Filter xử lý JWT authentication
- * 
+
  * Chức năng chính:
  * - Intercept tất cả HTTP requests
  * - Extract JWT token từ Authorization header
@@ -34,7 +34,7 @@ import java.io.IOException;
  */
 @Component
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter{
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
@@ -42,9 +42,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;                     // Utility xử lý JWT
     private final CustomUserDetailsService userDetailsService; // Service load user details
 
+
+
     /**
      * Xử lý filter cho mỗi request
-     * 
+
      * Quy trình:
      * 1. Extract JWT token từ Authorization header
      * 2. Validate token nếu có
@@ -97,7 +99,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * Extract JWT token từ Authorization header
-     * 
+
      * Format header: "Authorization: Bearer <JWT_TOKEN>"
      * 
      * @param request - HttpServletRequest

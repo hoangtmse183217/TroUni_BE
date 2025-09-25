@@ -1,6 +1,6 @@
 package com.trouni.tro_uni.service;
 
-import com.trouni.tro_uni.dto.SignupRequest;
+import com.trouni.tro_uni.dto.request.SignupRequest;
 import com.trouni.tro_uni.entity.EmailVerification;
 import com.trouni.tro_uni.entity.Profile;
 import com.trouni.tro_uni.entity.User;
@@ -19,12 +19,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * EmailVerificationService - Service quản lý xác thực email
- *
+
  * Chức năng chính:
  * - Tạo và gửi mã xác thực email
  * - Verify mã xác thực
@@ -49,53 +49,6 @@ public class EmailVerificationService {
 
     // Rate limiting: tối đa 3 lần gửi email trong 1 giờ
     private static final int MAX_EMAILS_PER_HOUR = 3;
-    private static final int MAX_ATTEMPTS_PER_CODE = 3;
-
-    /**
-     * Tạo và gửi mã xác thực email cho user mới
-     *
-     * @param user - User cần verify email
-     * @return EmailVerification - EmailVerification entity đã tạo
-     * @throws AppException - Khi có lỗi trong quá trình tạo
-     */
-    @Transactional
-    public EmailVerification createAndSendVerification(User user) {
-        try {
-            // Kiểm tra rate limiting
-            checkRateLimit(user.getEmail());
-
-            // Xóa các verification cũ chưa verify của user này
-            emailVerificationRepository.deleteUnverifiedByUserId(user.getId());
-
-            // Tạo mã xác thực mới
-            String verificationCode = verificationCodeService.generateValidCode();
-
-            // Tạo EmailVerification entity
-            EmailVerification emailVerification = new EmailVerification(
-                    user.getEmail(),
-                    user.getUsername(),
-                    verificationCode,
-                    user
-            );
-
-            // Lưu vào database
-            EmailVerification savedVerification = emailVerificationRepository.save(emailVerification);
-
-            // Gửi email
-            emailService.sendVerificationEmail(
-                    user.getEmail(),
-                    verificationCode,
-                    user.getUsername()
-            );
-
-            log.info("Verification code created and sent for user: {} ({})", user.getUsername(), user.getEmail());
-            return savedVerification;
-
-        } catch (Exception e) {
-            log.error("Failed to create and send verification for user {}: {}", user.getEmail(), e.getMessage());
-            throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     /**
      * Verify mã xác thực email
@@ -110,7 +63,7 @@ public class EmailVerificationService {
         try {
             // Tìm EmailVerification
             Optional<EmailVerification> verificationOpt = emailVerificationRepository
-                    .findByEmailAndIsVerifiedFalse(email);
+                    .findByEmail(email);
 
             if (verificationOpt.isEmpty()) {
                 throw new AppException(AuthenticationErrorCode.EMAIL_NOT_VERIFIED);
@@ -185,7 +138,7 @@ public class EmailVerificationService {
 
             // Tìm verification hiện tại
             Optional<EmailVerification> existingVerification = emailVerificationRepository
-                    .findByEmailAndIsVerifiedFalse(email);
+                    .findByEmail(email);
 
             if (existingVerification.isEmpty()) {
                 throw new AppException(AuthenticationErrorCode.USER_NOT_FOUND);
@@ -216,16 +169,6 @@ public class EmailVerificationService {
             log.error("Failed to resend verification for {}: {}", email, e.getMessage());
             throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    /**
-     * Kiểm tra email đã được verify chưa
-     *
-     * @param email - Email cần kiểm tra
-     * @return boolean - true nếu đã verify
-     */
-    public boolean isEmailVerified(String email) {
-        return emailVerificationRepository.existsByEmailAndIsVerifiedTrue(email);
     }
 
     /**
@@ -266,33 +209,7 @@ public class EmailVerificationService {
      * @return Optional<EmailVerification> - Thông tin verification
      */
     public Optional<EmailVerification> getVerificationInfo(String email) {
-        return emailVerificationRepository.findByEmailAndIsVerifiedFalse(email);
-    }
-
-    /**
-     * Reset attempts cho một email (admin function)
-     *
-     * @param email - Email cần reset
-     */
-    @Transactional
-    public void resetAttempts(String email) {
-        Optional<EmailVerification> verification = emailVerificationRepository
-                .findByEmailAndIsVerifiedFalse(email);
-
-        if (verification.isPresent()) {
-            verification.get().resetAttempts();
-            emailVerificationRepository.save(verification.get());
-            log.info("Reset attempts for email: {}", email);
-        }
-    }
-
-    /**
-     * Lấy tất cả email verification trong database (dành cho debug)
-     *
-     * @return List<EmailVerification> - Danh sách tất cả email verification
-     */
-    public List<EmailVerification> getAllVerifications() {
-        return emailVerificationRepository.findAll();
+        return emailVerificationRepository.findByEmail(email);
     }
 
 
@@ -381,6 +298,114 @@ public class EmailVerificationService {
         } catch (Exception e) {
             log.error("Failed to create verification for signup: {}", e.getMessage());
             throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Tạo và gửi email reset password
+     * 
+     * @param user - User cần reset password
+     * @throws AppException - Khi có lỗi trong quá trình tạo
+     */
+    @Transactional
+    public void createAndSendPasswordResetEmail(User user) {
+        try {
+            // Kiểm tra rate limiting
+            checkRateLimit(user.getEmail());
+
+            // Xóa các password reset token cũ của user này
+            emailVerificationRepository.deletePasswordResetTokensByUserId(user.getId());
+
+            // Tạo reset token
+            String resetToken = verificationCodeService.generateValidCode();
+
+            // Tạo EmailVerification entity cho password reset
+            EmailVerification passwordReset = new EmailVerification();
+            passwordReset.setEmail(user.getEmail());
+            passwordReset.setUsername(user.getUsername());
+            passwordReset.setVerificationCode(resetToken);
+            passwordReset.setExpiresAt(LocalDateTime.now().plusMinutes(15)); // 15 phút
+            passwordReset.setCreatedAt(LocalDateTime.now());
+            passwordReset.setAttempts(0);
+            passwordReset.setVerified(false);
+            passwordReset.setUser(user);
+            passwordReset.setType("PASSWORD_RESET"); // Đánh dấu loại password reset
+
+            // Lưu vào database
+            emailVerificationRepository.save(passwordReset);
+
+            // Gửi email reset password
+            emailService.sendPasswordResetEmail(
+                    user.getEmail(),
+                    resetToken,
+                    user.getUsername()
+            );
+
+            log.info("Password reset email sent to: {} ({})", user.getUsername(), user.getEmail());
+
+        } catch (Exception e) {
+            log.error("Failed to create password reset email for user {}: {}", user.getEmail(), e.getMessage());
+            throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Validate password reset token
+     * 
+     * @param token - Reset token
+     * @return Map<String, Object> - Thông tin từ token
+     * @throws AppException - Khi token không hợp lệ
+     */
+    public Map<String, Object> validatePasswordResetToken(String token) {
+        try {
+            // Tìm password reset token
+            Optional<EmailVerification> resetOpt = emailVerificationRepository
+                    .findByVerificationCodeAndType(token, "PASSWORD_RESET");
+
+            if (resetOpt.isEmpty()) {
+                throw new AppException(AuthenticationErrorCode.TOKEN_INVALID);
+            }
+
+            EmailVerification reset = resetOpt.get();
+
+            // Kiểm tra token có hết hạn không
+            if (reset.isExpired()) {
+                emailVerificationRepository.delete(reset);
+                throw new AppException(AuthenticationErrorCode.TOKEN_EXPIRED);
+            }
+
+            // Kiểm tra đã verify chưa
+            if (reset.isVerified()) {
+                throw new AppException(AuthenticationErrorCode.TOKEN_INVALID);
+            }
+
+            // Trả về thông tin từ token
+            return Map.of(
+                "userId", reset.getUser().getId().toString(),
+                "email", reset.getEmail(),
+                "username", reset.getUsername()
+            );
+
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to validate password reset token: {}", e.getMessage());
+            throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Xóa password reset token sau khi sử dụng
+     * 
+     * @param token - Token cần xóa
+     */
+    @Transactional
+    public void deletePasswordResetToken(String token) {
+        try {
+            emailVerificationRepository.deleteByVerificationCodeAndType(token, "PASSWORD_RESET");
+            log.info("Password reset token deleted: {}", token);
+        } catch (Exception e) {
+            log.error("Failed to delete password reset token: {}", e.getMessage());
         }
     }
 

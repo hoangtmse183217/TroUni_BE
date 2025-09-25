@@ -1,4 +1,4 @@
-package com.trouni.tro_uni.dto;
+package com.trouni.tro_uni.dto.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,15 +13,7 @@ public class ApiResponse<T> {
     private String code;
     private String message;
     private T data;
-    
-    public static <T> ApiResponse<T> success(T data) {
-        return ApiResponse.<T>builder()
-                .code("SUCCESS")
-                .message("Operation completed successfully")
-                .data(data)
-                .build();
-    }
-    
+
     public static <T> ApiResponse<T> success(String message, T data) {
         return ApiResponse.<T>builder()
                 .code("SUCCESS")

@@ -1,6 +1,7 @@
 package com.trouni.tro_uni.repository;
 
 import com.trouni.tro_uni.entity.User;
+import com.trouni.tro_uni.enums.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByUsername(String username);
     
     boolean existsByEmail(String email);
+    
+    boolean existsByRole(UserRole role);
 }

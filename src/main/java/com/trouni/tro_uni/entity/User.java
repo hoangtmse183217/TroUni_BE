@@ -3,6 +3,7 @@ package com.trouni.tro_uni.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.enums.VerificationStatus;
+import com.trouni.tro_uni.enums.AccountStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,7 +17,7 @@ import java.util.UUID;
 
 /**
  * User Entity - Entity đại diện cho người dùng trong hệ thống
- * 
+
  * Chức năng chính:
  * - Lưu trữ thông tin cơ bản của user (username, email, password)
  * - Implement UserDetails để tích hợp với Spring Security
@@ -42,13 +43,13 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "user_name", nullable = false, unique = true, length = 100)
+    @Column(name = "user_name", nullable = false, unique = true, length = 100, columnDefinition = "nvarchar(100)")
     private String username;
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     private String password;
 
     // ===============================
@@ -67,6 +68,33 @@ public class User implements UserDetails {
     private VerificationStatus idVerificationStatus = VerificationStatus.NOT_VERIFIED;
 
     // ===============================
+    // Account Status Fields
+    // ===============================
+    
+    /**
+     * Account Status - Trạng thái tài khoản
+     * - ACTIVE: Tài khoản hoạt động bình thường
+     * - LOCKED: Tài khoản bị khóa (không thể đăng nhập)
+     * - SUSPENDED: Tài khoản bị tạm ngưng
+     * - DELETED: Tài khoản đã bị xóa (soft delete)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private AccountStatus status = AccountStatus.ACTIVE;
+
+    // ===============================
+    // Social Login Fields
+    // ===============================
+    
+    /**
+     * Google Account - Kiểm tra user có đăng nhập bằng Google hay không
+     * - Default: false (user đăng ký thông thường)
+     * - True: user đăng nhập bằng Google OAuth
+     */
+    @Column(name = "google_account")
+    private boolean googleAccount = false;
+
+    // ===============================
     // Relationship Fields
     // ===============================
     
@@ -76,7 +104,7 @@ public class User implements UserDetails {
      * - cascade: Khi xóa User thì cũng xóa Profile
      * - fetch: Lazy loading để tối ưu performance
      */
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private Profile profile;
 
@@ -96,7 +124,7 @@ public class User implements UserDetails {
     
     /**
      * Trả về danh sách quyền của user
-     * 
+
      * Format: "ROLE_" + role.name()
      * Ví dụ: "ROLE_STUDENT", "ROLE_ADMIN"
      * 
@@ -119,7 +147,7 @@ public class User implements UserDetails {
 
     /**
      * Trả về username (không phải email)
-     * 
+
      * Quan trọng: Phải return username, không phải email
      * để phân biệt được login bằng username vs email
      * 

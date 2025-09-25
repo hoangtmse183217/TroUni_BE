@@ -1,11 +1,11 @@
 package com.trouni.tro_uni.controller;
 
-import com.trouni.tro_uni.dto.ApiResponse;
-import com.trouni.tro_uni.dto.ResendCodeRequest;
-import com.trouni.tro_uni.dto.ResendCodeResponse;
-import com.trouni.tro_uni.dto.VerifyEmailRequest;
-import com.trouni.tro_uni.dto.VerifyEmailResponse;
-import com.trouni.tro_uni.dto.VerificationStatusResponse;
+import com.trouni.tro_uni.dto.common.ApiResponse;
+import com.trouni.tro_uni.dto.request.ResendCodeRequest;
+import com.trouni.tro_uni.dto.response.ResendCodeResponse;
+import com.trouni.tro_uni.dto.request.VerifyEmailRequest;
+import com.trouni.tro_uni.dto.response.VerifyEmailResponse;
+import com.trouni.tro_uni.dto.response.VerificationStatusResponse;
 import com.trouni.tro_uni.entity.EmailVerification;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.service.EmailVerificationService;
@@ -16,7 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.Optional;
 
 /**

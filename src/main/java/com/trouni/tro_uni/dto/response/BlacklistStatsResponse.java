@@ -1,4 +1,4 @@
-package com.trouni.tro_uni.dto;
+package com.trouni.tro_uni.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

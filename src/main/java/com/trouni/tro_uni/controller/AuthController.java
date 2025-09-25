@@ -1,10 +1,16 @@
 package com.trouni.tro_uni.controller;
 
-import com.trouni.tro_uni.dto.ApiResponse;
-import com.trouni.tro_uni.dto.AuthResponse;
-import com.trouni.tro_uni.dto.LoginRequest;
-import com.trouni.tro_uni.dto.SignupRequest;
-import com.trouni.tro_uni.dto.UserResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.trouni.tro_uni.dto.common.ApiResponse;
+import com.trouni.tro_uni.dto.response.AuthResponse;
+import com.trouni.tro_uni.dto.request.LoginRequest;
+import com.trouni.tro_uni.dto.request.SignupRequest;
+import com.trouni.tro_uni.dto.response.UserResponse;
+import com.trouni.tro_uni.dto.request.GoogleLoginRequest;
+import com.trouni.tro_uni.dto.request.ForgotPasswordRequest;
+import com.trouni.tro_uni.dto.response.ForgotPasswordResponse;
+import com.trouni.tro_uni.dto.request.ResetPasswordRequest;
+import com.trouni.tro_uni.dto.response.ResetPasswordResponse;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.service.AuthService;
@@ -74,9 +80,6 @@ public class AuthController {
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("USER_NOT_FOUND", "User not found!"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("AUTHENTICATION_FAILED", "Authentication failed!"));
         }
     }
     
@@ -111,9 +114,6 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("REGISTRATION_ERROR", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("REGISTRATION_FAILED", "Registration failed!"));
         }
     }
     
@@ -165,46 +165,38 @@ public class AuthController {
         }
         return null;
     }
+
     
     /**
-     * API test để kiểm tra hoạt động của auth endpoints
+     * API đăng nhập bằng Google OAuth
      * <p>
-     * Endpoint: GET /api/auth/test
+     * Endpoint: POST /auth/google-login
      * <p>
-     * Response:
+     * Request Body:
      * {
-     *   "message": "Auth endpoints are working!"
+     *   "accessToken": "google_access_token"
      * }
      * <p>
-     * @return ResponseEntity - Response test
+     * Response thành công:
+     * {
+     *   "success": true,
+     *   "message": "Google login successful!",
+     *   "data": {
+     *     "token": "jwt_token",
+     *     "id": "uuid",
+     *     "username": "username",
+     *     "email": "email@example.com",
+     *     "role": "STUDENT"
+     *   }
+     * }
+     * 
+     * @param googleLoginRequest - Request chứa Google access token
+     * @return ResponseEntity - Response chứa JWT token và thông tin user
      */
-    @GetMapping("/test")
-    public ResponseEntity<?> testEndpoint() {
-        return ResponseEntity.ok(ApiResponse.success("Auth endpoints are working!", null));
-    }
-
-    /**
-     * API test signup không gửi email
-     * <p>
-     * Endpoint: POST /api/auth/test-signup
-     * <p>
-     * @param signUpRequest - Thông tin đăng ký
-     * @return ResponseEntity - Response test
-     */
-    @PostMapping("/test-signup")
-    public ResponseEntity<?> testSignup(@Valid @RequestBody SignupRequest signUpRequest) {
-        try {
-            // Test chỉ tạo user và profile, không gửi email
-            String message = authService.registerUserWithoutEmail(signUpRequest);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(message, null));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("TEST_SIGNUP_ERROR", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("TEST_SIGNUP_FAILED", "Registration failed!"));
-        }
+    @PostMapping("/google-login")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(@Valid @RequestBody GoogleLoginRequest googleLoginRequest) throws JsonProcessingException {
+        AuthResponse response = authService.authenticateWithGoogle(googleLoginRequest);
+        return ResponseEntity.ok(ApiResponse.success("Google login successful!", response));
     }
     
     /**
@@ -227,13 +219,76 @@ public class AuthController {
      */
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser() {
+        User currentUser = authService.getCurrentUser();
+        UserResponse userResponse = UserResponse.fromUser(currentUser);
+        return ResponseEntity.ok(ApiResponse.success("User information retrieved successfully", userResponse));
+    }
+
+    /**
+     * API quên mật khẩu - gửi email reset password
+     * <p>
+     * Endpoint: POST /auth/forgot-password
+     * <p>
+     * Request body:
+     * {
+     *   "email": "email@example.com"
+     * }
+     * <p>
+     * Response thành công:
+     * {
+     *   "success": true,
+     *   "message": "Password reset instructions have been sent to your email address."
+     * }
+     * <p>
+     * @param request - Thông tin email cần reset password
+     * @return ResponseEntity - Response thông báo kết quả
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
-            User currentUser = authService.getCurrentUser();
-            UserResponse userResponse = UserResponse.fromUser(currentUser);
-            return ResponseEntity.ok(ApiResponse.success("User information retrieved successfully", userResponse));
+            ForgotPasswordResponse response = authService.forgotPassword(request);
+            return ResponseEntity.ok(ApiResponse.success("Password reset email sent successfully", response));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getErrorCode(), e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("UNAUTHORIZED", "User not authenticated"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "An unexpected error occurred"));
         }
     }
+
+    /**
+     * API reset mật khẩu với token
+     * <p>
+     * Endpoint: POST /auth/reset-password
+     * <p>
+     * Request body:
+     * {
+     *   "token": "reset_token_from_email",
+     *   "newPassword": "new_password"
+     * }
+     * <p>
+     * Response thành công:
+     * {
+     *   "success": true,
+     *   "message": "Password has been reset successfully. You can now login with your new password."
+     * }
+     * <p>
+     * @param request - Thông tin token và password mới
+     * @return ResponseEntity - Response thông báo kết quả
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            ResetPasswordResponse response = authService.resetPassword(request);
+            return ResponseEntity.ok(ApiResponse.success("Password reset successfully", response));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getErrorCode(), e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "An unexpected error occurred"));
+        }
+    }
+
 }

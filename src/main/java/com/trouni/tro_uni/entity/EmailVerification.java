@@ -62,7 +62,7 @@ public class EmailVerification {
     // ===============================
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = true) // Cho phép NULL cho trường hợp signup
+    @JoinColumn(name = "user_id") // Cho phép NULL cho trường hợp signup
     private User user;
 
     // ===============================
@@ -78,12 +78,15 @@ public class EmailVerification {
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     private String passwordHash; // Password đã hash
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role", nullable = false)
     private UserRole userRole = UserRole.STUDENT; // Role của user
+
+    @Column(name = "type", nullable = false, length = 50)
+    private String type = "EMAIL_VERIFICATION"; // Loại verification (EMAIL_VERIFICATION, PASSWORD_RESET)
 
     // ===============================
     // Constructors
@@ -102,23 +105,6 @@ public class EmailVerification {
         this.username = username;
         this.verificationCode = verificationCode;
         this.user = user;
-        this.createdAt = LocalDateTime.now();
-        this.expiresAt = LocalDateTime.now().plusMinutes(5); // Hết hạn sau 5 phút
-    }
-
-    /**
-     * Constructor tạo EmailVerification cho signup với role
-     * <p>
-     * @param email - Email cần verify
-     * @param username - Username từ signup
-     * @param verificationCode - Mã xác thực 6 số
-     * @param userRole - Role của user (STUDENT hoặc LANDLORD)
-     */
-    public EmailVerification(String email, String username, String verificationCode, UserRole userRole) {
-        this.email = email;
-        this.username = username;
-        this.verificationCode = verificationCode;
-        this.userRole = userRole;
         this.createdAt = LocalDateTime.now();
         this.expiresAt = LocalDateTime.now().plusMinutes(5); // Hết hạn sau 5 phút
     }
@@ -172,13 +158,6 @@ public class EmailVerification {
      */
     public boolean canAttempt() {
         return !isVerified && !isExpired() && !isMaxAttemptsReached();
-    }
-
-    /**
-     * Reset attempts về 0
-     */
-    public void resetAttempts() {
-        this.attempts = 0;
     }
 
     /**

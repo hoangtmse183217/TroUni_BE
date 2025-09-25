@@ -1,6 +1,5 @@
 package com.trouni.tro_uni.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,7 +22,7 @@ public class Profile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
     
-    @Column(name = "full_name", length = 150)
+    @Column(name = "full_name", length = 150, columnDefinition = "nvarchar(150)")
     private String fullName;
     
     @Column(length = 20)

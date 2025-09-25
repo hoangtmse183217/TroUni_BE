@@ -1,12 +1,12 @@
 package com.trouni.tro_uni.controller;
 
-import com.trouni.tro_uni.dto.ApiResponse;
-import com.trouni.tro_uni.dto.BlacklistStatsResponse;
-import com.trouni.tro_uni.dto.SignupRequest;
-import com.trouni.tro_uni.dto.TokenCheckResponse;
-import com.trouni.tro_uni.dto.UserResponse;
+import com.trouni.tro_uni.dto.common.ApiResponse;
+import com.trouni.tro_uni.dto.response.BlacklistStatsResponse;
+import com.trouni.tro_uni.dto.response.TokenCheckResponse;
+import com.trouni.tro_uni.dto.response.UserResponse;
+import com.trouni.tro_uni.dto.request.UpdateUserRequest;
+import com.trouni.tro_uni.dto.request.AdminUpdateUserRequest;
 import com.trouni.tro_uni.entity.User;
-import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.repository.UserRepository;
 import com.trouni.tro_uni.service.AuthService;
@@ -14,6 +14,8 @@ import com.trouni.tro_uni.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.Map;
@@ -85,7 +87,7 @@ public class UserController {
     }
 
 
-    @GetMapping("/user/{username}")
+    @GetMapping("/{username}")
     public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
         User user = userRepository.findByUsername(username).orElse(null);
         if (user != null) {
@@ -95,28 +97,6 @@ public class UserController {
         return ResponseEntity.notFound().build();
     }
 
-    @PostMapping("/create-test-user")
-    public ResponseEntity<?> createTestUser() {
-        try {
-            // Check if user already exists
-            if (userRepository.findByUsername("testuser").isPresent()) {
-                return ResponseEntity.ok(ApiResponse.success("Test user already exists", null));
-            }
-
-            SignupRequest signupRequest = new SignupRequest();
-            signupRequest.setUsername("testuser");
-            signupRequest.setEmail("test@example.com");
-            signupRequest.setPassword("password123");
-            signupRequest.setFirstName("Test");
-            signupRequest.setLastName("User");
-            signupRequest.setRole(UserRole.STUDENT); // Set role mặc định
-
-            Map<String, String> result = authService.registerUser(signupRequest);
-            return ResponseEntity.ok(ApiResponse.success("Test user created successfully", result));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("CREATE_USER_ERROR", e.getMessage()));
-        }
-    }
 
     /**
      * API kiểm tra token có bị blacklist không
@@ -186,6 +166,155 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.success("Blacklist stats retrieved successfully", stats));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("STATS_ERROR", e.getMessage()));
+        }
+    }
+    
+    /**
+     * API cập nhật thông tin user của bản thân
+     * <p>
+     * Endpoint: PUT /api/users/me
+     * <p>
+     * Headers:
+     * Authorization: Bearer <JWT_TOKEN>
+     * Content-Type: application/json
+     * <p>
+     * Request Body:
+     * {
+     *   "username": "new_username",
+     *   "email": "new_email@example.com"
+     * }
+     * <p>
+     * Response thành công:
+     * {
+     *   "success": true,
+     *   "message": "User updated successfully!",
+     *   "data": {
+     *     "id": "uuid",
+     *     "username": "new_username",
+     *     "email": "new_email@example.com",
+     *     "role": "STUDENT",
+     *     "status": "ACTIVE",
+     *     "createdAt": "2024-01-01T00:00:00",
+     *     "updatedAt": "2024-01-01T00:00:00"
+     *   }
+     * }
+     * 
+     * @param updateRequest - Thông tin cập nhật user
+     * @return ResponseEntity - Response chứa user đã cập nhật
+     */
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
+        try {
+            User currentUser = authService.getCurrentUser();
+            User updatedUser = authService.updateCurrentUser(currentUser, updateRequest);
+            UserResponse userResponse = UserResponse.fromUser(updatedUser);
+            return ResponseEntity.ok(ApiResponse.success("User updated successfully!", userResponse));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getErrorCode(), e.getErrorMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("USER_UPDATE_FAILED", "Failed to update user!"));
+        }
+    }
+    
+    /**
+     * API admin/manager cập nhật thông tin user khác
+     * <p>
+     * Endpoint: PUT /api/users/{userId}
+     * <p>
+     * Headers:
+     * Authorization: Bearer <JWT_TOKEN>
+     * Content-Type: application/json
+     * <p>
+     * Path Variables:
+     * userId - UUID của user cần cập nhật
+     * <p>
+     * Request Body:
+     * {
+     *   "username": "new_username",
+     *   "email": "new_email@example.com",
+     *   "role": "LANDLORD",
+     *   "status": "ACTIVE"
+     * }
+     * <p>
+     * Response thành công:
+     * {
+     *   "success": true,
+     *   "message": "User updated successfully!",
+     *   "data": {
+     *     "id": "uuid",
+     *     "username": "new_username",
+     *     "email": "new_email@example.com",
+     *     "role": "LANDLORD",
+     *     "status": "ACTIVE",
+     *     "createdAt": "2024-01-01T00:00:00",
+     *     "updatedAt": "2024-01-01T00:00:00"
+     *   }
+     * }
+     * 
+     * @param userId - UUID của user cần cập nhật
+     * @param updateRequest - Thông tin cập nhật user
+     * @return ResponseEntity - Response chứa user đã cập nhật
+     */
+    @PutMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserResponse>> adminUpdateUser(@PathVariable UUID userId, @Valid @RequestBody AdminUpdateUserRequest updateRequest) {
+        try {
+            User currentUser = authService.getCurrentUser();
+            User updatedUser = authService.adminUpdateUser(currentUser, userId, updateRequest);
+            UserResponse userResponse = UserResponse.fromUser(updatedUser);
+            return ResponseEntity.ok(ApiResponse.success("User updated successfully!", userResponse));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getErrorCode(), e.getErrorMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("USER_UPDATE_FAILED", "Failed to update user!"));
+        }
+    }
+    
+    /**
+     * API vô hiệu hóa tài khoản user (soft delete)
+     * <p>
+     * Endpoint: DELETE /api/users/{userId}
+     * <p>
+     * Headers:
+     * Authorization: Bearer <JWT_TOKEN>
+     * <p>
+     * Path Variables:
+     * userId - UUID của user cần vô hiệu hóa
+     * <p>
+     * Response thành công:
+     * {
+     *   "success": true,
+     *   "message": "User deleted successfully!",
+     *   "data": {
+     *     "id": "uuid",
+     *     "username": "username",
+     *     "email": "email@example.com",
+     *     "role": "STUDENT",
+     *     "status": "DELETED",
+     *     "createdAt": "2024-01-01T00:00:00",
+     *     "updatedAt": "2024-01-01T00:00:00"
+     *   }
+     * }
+     * 
+     * @param userId - UUID của user cần vô hiệu hóa
+     * @return ResponseEntity - Response chứa user đã bị vô hiệu hóa
+     */
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserResponse>> deleteUser(@PathVariable UUID userId) {
+        try {
+            User currentUser = authService.getCurrentUser();
+            User deletedUser = authService.deleteUser(currentUser, userId);
+            UserResponse userResponse = UserResponse.fromUser(deletedUser);
+            return ResponseEntity.ok(ApiResponse.success("User deleted successfully!", userResponse));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getErrorCode(), e.getErrorMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("USER_DELETE_FAILED", "Failed to delete user!"));
         }
     }
 
