@@ -1,0 +1,1173 @@
+openapi: 3.0.3
+info:
+  title: TroUni API
+  description: |
+    API documentation for TroUni - University Roommate Finding Platform
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the JWT token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Getting Started
+    1. Register a new user using `/auth/signup`
+    2. Login using `/auth/login` to get your JWT token
+    3. Use the token in subsequent requests
+    
+  version: 1.0.0
+  contact:
+    name: TroUni Team
+    email: trouni01@gmail.com
+    url: https://trouni.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://trouni-858113801719.asia-southeast1.run.app
+    description: Production Server
+  - url: http://localhost:8080
+    description: Local Development Server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User Login
+      description: Authenticate user with username/email and password. Returns JWT token and user information.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              usernameOrEmail: "testuser"
+              password: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Login successful"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  id: 1
+                  username: "testuser"
+                  email: "test@example.com"
+                  role: "STUDENT"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                errorCode: "INVALID_CREDENTIALS"
+                message: "Invalid username/email or password!"
+
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: User Registration
+      description: Register a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            example:
+              username: "newuser"
+              email: "newuser@example.com"
+              password: "password123"
+              firstName: "John"
+              lastName: "Doe"
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Registration successful"
+                data:
+                  message: "User registered successfully!"
+        '400':
+          description: Registration failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                errorCode: "REGISTRATION_ERROR"
+                message: "Username or email already exists"
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User Logout
+      description: Logout user and blacklist JWT token
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "User logged out successfully!"
+                data: null
+
+  /auth/google-login:
+    post:
+      tags:
+        - Authentication
+      summary: Google OAuth Login
+      description: Authenticate user using Google OAuth access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleLoginRequest'
+            example:
+              accessToken: "google_access_token_here"
+      responses:
+        '200':
+          description: Google login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Google login successful!"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  id: 1
+                  username: "googleuser"
+                  email: "user@gmail.com"
+                  role: "STUDENT"
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get Current User
+      description: Get information about the currently authenticated user
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "User information retrieved successfully"
+                data:
+                  id: 1
+                  username: "testuser"
+                  email: "test@example.com"
+                  role: "STUDENT"
+                  status: "ACTIVE"
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Forgot Password
+      description: Send password reset email to user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+            example:
+              email: "user@example.com"
+      responses:
+        '200':
+          description: Password reset email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Password reset email sent successfully"
+                data:
+                  message: "Password reset instructions have been sent to your email address."
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset Password
+      description: Reset password using token from email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+            example:
+              token: "reset_token_from_email"
+              newPassword: "newpassword123"
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Password reset successfully"
+                data:
+                  message: "Password has been reset successfully. You can now login with your new password."
+
+  # User Management Endpoints
+  /user/users:
+    get:
+      tags:
+        - User Management
+      summary: Get All Users
+      description: Get list of all users (for debugging/testing)
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Users retrieved successfully"
+                data:
+                  - id: 1
+                    username: "testuser"
+                    email: "test@example.com"
+                    role: "STUDENT"
+                    status: "ACTIVE"
+                    createdAt: "2024-01-01T00:00:00"
+                    updatedAt: "2024-01-01T00:00:00"
+
+  /user/{username}:
+    get:
+      tags:
+        - User Management
+      summary: Get User by Username
+      description: Get user information by username
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "testuser"
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "User found"
+                data:
+                  id: 1
+                  username: "testuser"
+                  email: "test@example.com"
+                  role: "STUDENT"
+                  status: "ACTIVE"
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+        '404':
+          description: User not found
+
+  /user/me:
+    put:
+      tags:
+        - User Management
+      summary: Update Current User
+      description: Update information of the currently authenticated user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            example:
+              username: "newusername"
+              email: "newemail@example.com"
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "User updated successfully!"
+                data:
+                  id: 1
+                  username: "newusername"
+                  email: "newemail@example.com"
+                  role: "STUDENT"
+                  status: "ACTIVE"
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+
+  /user/{userId}:
+    put:
+      tags:
+        - User Management
+      summary: Admin Update User
+      description: Admin/Manager update user information
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateUserRequest'
+            example:
+              username: "updateduser"
+              email: "updated@example.com"
+              role: "LANDLORD"
+              status: "ACTIVE"
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Update failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      tags:
+        - User Management
+      summary: Delete User (Soft Delete)
+      description: Soft delete user account (admin/manager only) - Sets status to DELETED
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "User deleted successfully!"
+                data:
+                  id: 1
+                  username: "deleteduser"
+                  email: "deleted@example.com"
+                  role: "STUDENT"
+                  status: "DELETED"
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+
+  /user/{userId}/hard-delete:
+    delete:
+      tags:
+        - User Management
+      summary: Hard Delete User (Admin Only)
+      description: |
+        Permanently delete user and all related data from database (Admin only)
+        
+        **WARNING: This action cannot be undone!**
+        
+        This will delete:
+        - User account and profile
+        - All bookmarks, reviews, reports, notifications
+        - All rooms owned by the user (if landlord)
+        - All subscriptions and payments
+        - All verification records
+        - All related data permanently
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: User permanently deleted from database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "User permanently deleted from database!"
+                data:
+                  deletedUser:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+                    username: "deleteduser"
+                    email: "deleted@example.com"
+                    role: "STUDENT"
+                    status: "ACTIVE"
+                    createdAt: "2024-01-01T00:00:00"
+                    updatedAt: "2024-01-01T00:00:00"
+                  deletedRecordsCount: 15
+                  message: "User and all related data have been permanently deleted from database"
+        '400':
+          description: Hard delete failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                errorCode: "ACCESS_DENIED"
+                message: "Only admin can perform hard delete"
+        '403':
+          description: Access denied - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Profile Management Endpoints
+  /profile/me:
+    get:
+      tags:
+        - Profile Management
+      summary: Get Current User Profile
+      description: Get profile information of the currently authenticated user
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Profile retrieved successfully!"
+                data:
+                  id: 1
+                  userId: "123e4567-e89b-12d3-a456-426614174000"
+                  fullName: "John Doe"
+                  gender: "male"
+                  phoneNumber: "0123456789"
+                  avatarUrl: "https://example.com/avatar.jpg"
+                  badge: "Tin uy tín"
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+
+    put:
+      tags:
+        - Profile Management
+      summary: Update Current User Profile
+      description: Update profile information of the currently authenticated user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+            example:
+              fullName: "John Updated Doe"
+              gender: "male"
+              phoneNumber: "0987654321"
+              avatarUrl: "https://example.com/new-avatar.jpg"
+              badge: "New Badge"
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Profile updated successfully!"
+                data:
+                  id: 1
+                  userId: "123e4567-e89b-12d3-a456-426614174000"
+                  fullName: "John Updated Doe"
+                  gender: "male"
+                  phoneNumber: "0987654321"
+                  avatarUrl: "https://example.com/new-avatar.jpg"
+                  badge: "New Badge"
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+
+  /profile/{userId}:
+    get:
+      tags:
+        - Profile Management
+      summary: Get Profile by User ID
+      description: Get profile information by user ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Profile retrieved successfully!"
+                data:
+                  id: 1
+                  userId: "123e4567-e89b-12d3-a456-426614174000"
+                  fullName: "John Doe"
+                  gender: "male"
+                  phoneNumber: "0123456789"
+                  avatarUrl: "https://example.com/avatar.jpg"
+                  badge: "Tin uy tín"
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+
+  # Email Verification Endpoints
+  /email-verification/verify:
+    post:
+      tags:
+        - Email Verification
+      summary: Verify Email
+      description: Verify email address with 6-digit verification code
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+            example:
+              email: "user@example.com"
+              verificationCode: "123456"
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                code: "200"
+                message: "Email verified successfully!"
+                data:
+                  email: "user@example.com"
+                  verified: true
+                  verifiedAt: "2024-01-01T10:00:00"
+        '400':
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                code: "400"
+                message: "Verification failed"
+
+  /email-verification/resend:
+    post:
+      tags:
+        - Email Verification
+      summary: Resend Verification Code
+      description: Resend verification code to email address
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendCodeRequest'
+            example:
+              email: "user@example.com"
+      responses:
+        '200':
+          description: Verification code resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                code: "200"
+                message: "Verification code resent successfully!"
+                data:
+                  email: "user@example.com"
+                  expiresAt: "2024-01-01T10:05:00"
+
+  /email-verification/info:
+    get:
+      tags:
+        - Email Verification
+      summary: Get Verification Info
+      description: Get verification status and information for an email
+      security: []
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+          example: "user@example.com"
+      responses:
+        '200':
+          description: Verification info retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                code: "200"
+                message: "Verification info retrieved successfully"
+                data:
+                  email: "user@example.com"
+                  verified: false
+                  attempts: 1
+                  maxAttempts: 3
+                  expiresAt: "2024-01-01T10:05:00"
+                  canAttempt: true
+        '404':
+          description: Verification info not found
+
+  # Debug/Testing Endpoints
+  /user/check-token:
+    post:
+      tags:
+        - Debug/Testing
+      summary: Check Token Status
+      description: Check if JWT token is blacklisted (for debugging)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: JWT token to check
+              required:
+                - token
+            example:
+              token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Token check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Token check completed"
+                data:
+                  isBlacklisted: false
+                  message: "Token is valid"
+
+  /user/blacklist-stats:
+    get:
+      tags:
+        - Debug/Testing
+      summary: Get Blacklist Statistics
+      description: Get statistics about blacklisted tokens (for debugging)
+      responses:
+        '200':
+          description: Blacklist stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Blacklist stats retrieved successfully"
+                data:
+                  totalBlacklisted: 5
+                  expiredTokens: 2
+                  activeTokens: 3
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter JWT token obtained from login endpoint
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the request was successful
+        message:
+          type: string
+          description: Response message
+        data:
+          type: object
+          description: Response data (varies by endpoint)
+        errorCode:
+          type: string
+          description: Error code (only present when success is false)
+      example:
+        success: true
+        message: "Operation successful"
+        data: {}
+
+    LoginRequest:
+      type: object
+      required:
+        - usernameOrEmail
+        - password
+      properties:
+        usernameOrEmail:
+          type: string
+          description: Username or email address
+          example: "testuser"
+        password:
+          type: string
+          format: password
+          description: User password
+          example: "password123"
+
+    SignupRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        username:
+          type: string
+          description: Unique username
+          example: "newuser"
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "newuser@example.com"
+        password:
+          type: string
+          format: password
+          description: User password
+          example: "password123"
+        firstName:
+          type: string
+          description: First name
+          example: "John"
+        lastName:
+          type: string
+          description: Last name
+          example: "Doe"
+
+    GoogleLoginRequest:
+      type: object
+      required:
+        - accessToken
+      properties:
+        accessToken:
+          type: string
+          description: Google OAuth access token
+          example: "google_access_token_here"
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to send reset instructions
+          example: "user@example.com"
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+          description: Reset token from email
+          example: "reset_token_from_email"
+        newPassword:
+          type: string
+          format: password
+          description: New password
+          example: "newpassword123"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: New username
+          example: "newusername"
+        email:
+          type: string
+          format: email
+          description: New email address
+          example: "newemail@example.com"
+
+    AdminUpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: New username
+          example: "updateduser"
+        email:
+          type: string
+          format: email
+          description: New email address
+          example: "updated@example.com"
+        role:
+          type: string
+          enum: [STUDENT, LANDLORD, ADMIN]
+          description: User role
+          example: "LANDLORD"
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DELETED]
+          description: User status
+          example: "ACTIVE"
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          description: Full name
+          example: "John Doe"
+        gender:
+          type: string
+          enum: [male, female, other]
+          description: Gender
+          example: "male"
+        phoneNumber:
+          type: string
+          description: Phone number
+          example: "0123456789"
+        avatarUrl:
+          type: string
+          format: uri
+          description: Avatar image URL
+          example: "https://example.com/avatar.jpg"
+        badge:
+          type: string
+          description: User badge
+          example: "Tin uy tín"
+
+    VerifyEmailRequest:
+      type: object
+      required:
+        - email
+        - verificationCode
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to verify
+          example: "user@example.com"
+        verificationCode:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: 6-digit verification code
+          example: "123456"
+
+    ResendCodeRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to resend code
+          example: "user@example.com"
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        id:
+          type: integer
+          description: User ID
+          example: 1
+        username:
+          type: string
+          description: Username
+          example: "testuser"
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "test@example.com"
+        role:
+          type: string
+          enum: [STUDENT, LANDLORD, ADMIN]
+          description: User role
+          example: "STUDENT"
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+          example: 1
+        username:
+          type: string
+          description: Username
+          example: "testuser"
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "test@example.com"
+        role:
+          type: string
+          enum: [STUDENT, LANDLORD, ADMIN]
+          description: User role
+          example: "STUDENT"
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DELETED]
+          description: User status
+          example: "ACTIVE"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-01T00:00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-01T00:00:00"
+
+    ProfileResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Profile ID
+          example: 1
+        userId:
+          type: string
+          format: uuid
+          description: User ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        fullName:
+          type: string
+          description: Full name
+          example: "John Doe"
+        gender:
+          type: string
+          enum: [male, female, other]
+          description: Gender
+          example: "male"
+        phoneNumber:
+          type: string
+          description: Phone number
+          example: "0123456789"
+        avatarUrl:
+          type: string
+          format: uri
+          description: Avatar image URL
+          example: "https://example.com/avatar.jpg"
+        badge:
+          type: string
+          description: User badge
+          example: "Tin uy tín"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-01T00:00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-01T00:00:00"
+
+    ForgotPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Response message
+          example: "Password reset instructions have been sent to your email address."
+
+    ResetPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Response message
+          example: "Password has been reset successfully. You can now login with your new password."
+
+    VerifyEmailResponse:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "user@example.com"
+        verified:
+          type: boolean
+          description: Verification status
+          example: true
+        verifiedAt:
+          type: string
+          format: date-time
+          description: Verification timestamp
+          example: "2024-01-01T10:00:00"
+
+    ResendCodeResponse:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "user@example.com"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Code expiration timestamp
+          example: "2024-01-01T10:05:00"
+
+    VerificationStatusResponse:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "user@example.com"
+        verified:
+          type: boolean
+          description: Verification status
+          example: false
+        attempts:
+          type: integer
+          description: Number of verification attempts
+          example: 1
+        maxAttempts:
+          type: integer
+          description: Maximum allowed attempts
+          example: 3
+        expiresAt:
+          type: string
+          format: date-time
+          description: Code expiration timestamp
+          example: "2024-01-01T10:05:00"
+        canAttempt:
+          type: boolean
+          description: Whether user can attempt verification
+          example: true
+
+    TokenCheckResponse:
+      type: object
+      properties:
+        isBlacklisted:
+          type: boolean
+          description: Whether token is blacklisted
+          example: false
+        message:
+          type: string
+          description: Status message
+          example: "Token is valid"
+
+    BlacklistStatsResponse:
+      type: object
+      properties:
+        totalBlacklisted:
+          type: integer
+          description: Total number of blacklisted tokens
+          example: 5
+        expiredTokens:
+          type: integer
+          description: Number of expired tokens
+          example: 2
+        activeTokens:
+          type: integer
+          description: Number of active blacklisted tokens
+          example: 3
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: User Management
+    description: User account management endpoints
+  - name: Profile Management
+    description: User profile management endpoints
+  - name: Email Verification
+    description: Email verification endpoints
+  - name: Debug/Testing
+    description: Debugging and testing endpoints

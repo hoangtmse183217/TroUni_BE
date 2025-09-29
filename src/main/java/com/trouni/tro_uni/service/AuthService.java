@@ -114,7 +114,7 @@ public class AuthService {
                 .id(userPrincipal.getId())
                 .username(userPrincipal.getUsername())
                 .email(userPrincipal.getEmail())
-                .role(userPrincipal.getRole().getValue())
+                .role(userPrincipal.getRole().getValue().toUpperCase())
                 .build();
     }
 
@@ -501,6 +501,94 @@ public class AuthService {
         
         log.info("Admin {} deleted user: {}", currentUser.getUsername(), targetUser.getUsername());
         return savedUser;
+    }
+    
+    /**
+     * Xóa hoàn toàn user khỏi database (hard delete) - Chỉ dành cho Admin
+     * <p>
+     * Chức năng:
+     * - Xóa tất cả dữ liệu liên quan đến user
+     * - Xóa Profile, Bookmark, Review, Report, Notification, Subscription, Payment, UserVerification
+     * - Xóa Room và các mối quan hệ liên quan (RoomImage, Review, Bookmark)
+     * - Xóa hoàn toàn user khỏi database
+     * 
+     * @param currentUser - Admin đang thực hiện
+     * @param targetUserId - ID của user cần xóa hoàn toàn
+     * @return Map<String, Object> - Thông tin user đã xóa và số lượng records bị ảnh hưởng
+     * @throws AppException - Khi không có quyền admin hoặc user không tồn tại
+     */
+    @Transactional
+    public Map<String, Object> hardDeleteUser(User currentUser, UUID targetUserId) {
+        // Kiểm tra quyền admin (chỉ admin mới được hard delete)
+        if (currentUser.getRole() != UserRole.ADMIN) {
+            throw new AppException(AuthenticationErrorCode.ACCESS_DENIED);
+        }
+        
+        // Không thể xóa chính mình
+        if (currentUser.getId().equals(targetUserId)) {
+            throw new AppException(AuthenticationErrorCode.CANNOT_DELETE_SELF);
+        }
+        
+        // Tìm user cần xóa
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new AppException(AuthenticationErrorCode.USER_NOT_FOUND));
+        
+        // Lưu thông tin user trước khi xóa để trả về response
+        Map<String, Object> deletedUserInfo = Map.of(
+            "id", targetUser.getId(),
+            "username", targetUser.getUsername(),
+            "email", targetUser.getEmail(),
+            "role", targetUser.getRole().name(),
+            "status", targetUser.getStatus().name(),
+            "createdAt", targetUser.getCreatedAt(),
+            "updatedAt", targetUser.getUpdatedAt()
+        );
+        
+        // Đếm số lượng records bị ảnh hưởng
+        int deletedRecordsCount = 0;
+        
+        try {
+            // Xóa tất cả dữ liệu liên quan đến user
+            // Cascade sẽ tự động xóa Profile, Subscription, Payment, UserVerification
+            // Cần xóa thủ công các mối quan hệ khác
+            
+            // Xóa Bookmark (user bookmarked rooms)
+            deletedRecordsCount += userRepository.deleteUserBookmarks(targetUserId);
+            
+            // Xóa Review (user reviewed rooms)
+            deletedRecordsCount += userRepository.deleteUserReviews(targetUserId);
+            
+            // Xóa Report (user reported content)
+            deletedRecordsCount += userRepository.deleteUserReports(targetUserId);
+            
+            // Xóa Notification (user received notifications)
+            deletedRecordsCount += userRepository.deleteUserNotifications(targetUserId);
+            
+            // Xóa Room và các mối quan hệ liên quan (nếu user là landlord)
+            if (targetUser.getRole() == UserRole.LANDLORD) {
+                deletedRecordsCount += userRepository.deleteUserRoomsAndRelated(targetUserId);
+            }
+            
+            // Xóa UserVerification (user verification records)
+            deletedRecordsCount += userRepository.deleteUserVerifications(targetUserId);
+            
+            // Cuối cùng xóa User (cascade sẽ xóa Profile, Subscription, Payment)
+            userRepository.delete(targetUser);
+            deletedRecordsCount += 1; // User record
+            
+            log.info("Admin {} hard deleted user: {} and {} related records", 
+                    currentUser.getUsername(), targetUser.getUsername(), deletedRecordsCount);
+            
+            return Map.of(
+                "deletedUser", deletedUserInfo,
+                "deletedRecordsCount", deletedRecordsCount,
+                "message", "User and all related data have been permanently deleted from database"
+            );
+            
+        } catch (Exception e) {
+            log.error("Error during hard delete of user {}: {}", targetUser.getUsername(), e.getMessage());
+            throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
+        }
     }
     
     /**

@@ -317,6 +317,60 @@ public class UserController {
                     .body(ApiResponse.error("USER_DELETE_FAILED", "Failed to delete user!"));
         }
     }
+    
+    /**
+     * API xóa hoàn toàn user khỏi database (hard delete) - Chỉ dành cho Admin
+     * <p>
+     * Endpoint: DELETE /api/users/{userId}/hard-delete
+     * <p>
+     * Headers:
+     * Authorization: Bearer <JWT_TOKEN>
+     * <p>
+     * Path Variables:
+     * userId - UUID của user cần xóa hoàn toàn
+     * <p>
+     * Chức năng:
+     * - Xóa tất cả dữ liệu liên quan đến user
+     * - Xóa Profile, Bookmark, Review, Report, Notification, Subscription, Payment, UserVerification
+     * - Xóa Room và các mối quan hệ liên quan (RoomImage, Review, Bookmark)
+     * - Xóa hoàn toàn user khỏi database
+     * <p>
+     * Response thành công:
+     * {
+     *   "success": true,
+     *   "message": "User permanently deleted from database!",
+     *   "data": {
+     *     "deletedUser": {
+     *       "id": "uuid",
+     *       "username": "username",
+     *       "email": "email@example.com",
+     *       "role": "STUDENT",
+     *       "status": "ACTIVE",
+     *       "createdAt": "2024-01-01T00:00:00",
+     *       "updatedAt": "2024-01-01T00:00:00"
+     *     },
+     *     "deletedRecordsCount": 15,
+     *     "message": "User and all related data have been permanently deleted from database"
+     *   }
+     * }
+     * 
+     * @param userId - UUID của user cần xóa hoàn toàn
+     * @return ResponseEntity - Response chứa thông tin user đã xóa và số lượng records bị ảnh hưởng
+     */
+    @DeleteMapping("/{userId}/hard-delete")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> hardDeleteUser(@PathVariable UUID userId) {
+        try {
+            User currentUser = authService.getCurrentUser();
+            Map<String, Object> result = authService.hardDeleteUser(currentUser, userId);
+            return ResponseEntity.ok(ApiResponse.success("User permanently deleted from database!", result));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getErrorCode(), e.getErrorMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("USER_HARD_DELETE_FAILED", "Failed to permanently delete user!"));
+        }
+    }
 
 }
 
