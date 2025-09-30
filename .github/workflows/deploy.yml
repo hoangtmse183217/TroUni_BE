@@ -51,7 +51,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID }}
-          export_default_credentials: true
 
       # 5. Build và Push Docker image bằng Jib
       # Jib sẽ tự động dùng thông tin xác thực Docker đã cấu hình ở bước trên
@@ -67,8 +66,7 @@ jobs:
 
           # Triển khai dịch vụ Cloud Run
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --set-env-vars="JWT_SIGNER_KEY=${{ secrets.JWT_SECRECT }},SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}" \
-            --set-secrets=SPRING_DATASOURCE_USERNAME=DB_USERNAME:latest,SPRING_DATASOURCE_PASSWORD=DB_PASSWORD:latest \
+            --set-env-vars="JWT_SIGNER_KEY=${{ secrets.JWT_SECRET }},PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_ID }},PAYPAL_CLIENT_SECRET=${{ secrets.PAYPAL_SECRET }},SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }},SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" \
             --image=$IMAGE_TAG \
             --platform=managed \
             --region=${{ env.REGION }} \
