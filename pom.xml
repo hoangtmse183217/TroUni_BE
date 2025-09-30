@@ -54,22 +54,6 @@
 	</dependencyManagement>
 
 	<dependencies>
-		<!-- ===  SPRING CLOUD GCP === -->
-		<dependency>
-			<groupId>com.google.cloud.sql</groupId>
-			<artifactId>postgres-socket-factory</artifactId>
-			<version>1.18.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.cloud.sql</groupId>
-			<artifactId>jdbc-socket-factory-core</artifactId>
-			<version>1.18.1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.google.cloud</groupId>
-			<artifactId>spring-cloud-gcp-starter-secretmanager</artifactId>
-		</dependency>
 
 		<dependency>
 			<groupId>org.hibernate.orm</groupId>
