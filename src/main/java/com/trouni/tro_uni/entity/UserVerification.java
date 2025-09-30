@@ -3,6 +3,7 @@ package com.trouni.tro_uni.entity;
 import com.trouni.tro_uni.enums.VerificationStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -42,7 +43,7 @@ public class UserVerification {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VerificationStatus status;
-    
-    @Column(columnDefinition = "TEXT")
+
+    @Nationalized
     private String notes; // Reason for rejection, etc.
 }

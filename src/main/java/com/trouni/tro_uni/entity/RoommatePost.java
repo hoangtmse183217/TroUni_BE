@@ -27,8 +27,8 @@ public class RoommatePost {
     @Nationalized
     @Column(nullable = false)
     private String title;
-    
-    @Column(columnDefinition = "TEXT")
+
+    @Nationalized
     private String description;
     
     @Column(name = "desired_location_text")

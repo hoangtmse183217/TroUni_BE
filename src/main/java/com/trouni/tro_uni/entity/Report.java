@@ -2,6 +2,7 @@ package com.trouni.tro_uni.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -28,8 +29,8 @@ public class Report {
     
     @Column(name = "reported_content_id", nullable = false)
     private UUID reportedContentId;
-    
-    @Column(columnDefinition = "TEXT")
+
+    @Nationalized
     private String reason;
     
     @Column(length = 20)

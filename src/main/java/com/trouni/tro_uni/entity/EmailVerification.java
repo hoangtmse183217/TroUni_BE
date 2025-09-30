@@ -92,23 +92,6 @@ public class EmailVerification {
     // Constructors
     // ===============================
 
-    /**
-     * Constructor tạo EmailVerification với thời hạn 5 phút
-     * <p>
-     * @param email - Email cần verify
-     * @param username - Username từ signup
-     * @param verificationCode - Mã xác thực 6 số
-     * @param user - User entity
-     */
-    public EmailVerification(String email, String username, String verificationCode, User user) {
-        this.email = email;
-        this.username = username;
-        this.verificationCode = verificationCode;
-        this.user = user;
-        this.createdAt = LocalDateTime.now();
-        this.expiresAt = LocalDateTime.now().plusMinutes(5); // Hết hạn sau 5 phút
-    }
-
     // ===============================
     // Business Methods
     // ===============================
