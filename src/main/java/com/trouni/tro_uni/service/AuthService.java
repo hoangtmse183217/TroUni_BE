@@ -318,12 +318,6 @@ public class AuthService {
 
     /**
      * Tạo user mới từ thông tin Google
-     * <p>
-     * @param email - Email từ Google
-     * @param name - Tên đầy đủ từ Google
-     * @param picture - URL ảnh từ Google
-     * @param gender - Giới tính từ Google
-     * @return User - User entity đã được lưu
      */
     private User createGoogleUser(String email, String name, String picture, String gender) {
         // Tạo username từ email (phần trước @)
@@ -367,10 +361,6 @@ public class AuthService {
     
     /**
      * Kiểm tra và cập nhật username nếu cần thiết
-     * 
-     * @param user - User cần cập nhật
-     * @param newUsername - Username mới
-     * @throws AppException - Khi username đã tồn tại
      */
     private void validateAndUpdateUsername(User user, String newUsername) {
         if (newUsername != null && !newUsername.trim().isEmpty()) {
@@ -386,10 +376,6 @@ public class AuthService {
     
     /**
      * Kiểm tra và cập nhật email nếu cần thiết
-     * 
-     * @param user - User cần cập nhật
-     * @param newEmail - Email mới
-     * @throws AppException - Khi email đã tồn tại
      */
     private void validateAndUpdateEmail(User user, String newEmail) {
         if (newEmail != null && !newEmail.trim().isEmpty()) {
@@ -405,11 +391,6 @@ public class AuthService {
 
     /**
      * Cập nhật thông tin user của bản thân
-     * <p>
-     * @param currentUser - User hiện tại đang đăng nhập
-     * @param updateRequest - Thông tin cập nhật
-     * @return User - User đã được cập nhật
-     * @throws AppException - Khi có lỗi validation hoặc conflict
      */
     public User updateCurrentUser(User currentUser, UpdateUserRequest updateRequest) {
         // Kiểm tra và cập nhật username (nếu có thay đổi)
@@ -427,12 +408,6 @@ public class AuthService {
     
     /**
      * Admin/Manager cập nhật thông tin user khác
-     * <p>
-     * @param currentUser - Admin/Manager đang thực hiện
-     * @param targetUserId - ID của user cần cập nhật
-     * @param updateRequest - Thông tin cập nhật
-     * @return User - User đã được cập nhật
-     * @throws AppException - Khi không có quyền hoặc có lỗi validation
      */
     public User adminUpdateUser(User currentUser, UUID targetUserId, AdminUpdateUserRequest updateRequest) {
         // Kiểm tra quyền admin/manager
@@ -474,11 +449,6 @@ public class AuthService {
     
     /**
      * Vô hiệu hóa tài khoản user (soft delete)
-     * <p>
-     * @param currentUser - Admin/Manager đang thực hiện
-     * @param targetUserId - ID của user cần vô hiệu hóa
-     * @return User - User đã được vô hiệu hóa
-     * @throws AppException - Khi không có quyền hoặc user không tồn tại
      */
     public User deleteUser(User currentUser, UUID targetUserId) {
         // Kiểm tra quyền admin/manager
@@ -505,20 +475,9 @@ public class AuthService {
     
     /**
      * Xóa hoàn toàn user khỏi database (hard delete) - Chỉ dành cho Admin
-     * <p>
-     * Chức năng:
-     * - Xóa tất cả dữ liệu liên quan đến user
-     * - Xóa Profile, Bookmark, Review, Report, Notification, Subscription, Payment, UserVerification
-     * - Xóa Room và các mối quan hệ liên quan (RoomImage, Review, Bookmark)
-     * - Xóa hoàn toàn user khỏi database
-     * 
-     * @param currentUser - Admin đang thực hiện
-     * @param targetUserId - ID của user cần xóa hoàn toàn
-     * @return Map<String, Object> - Thông tin user đã xóa và số lượng records bị ảnh hưởng
-     * @throws AppException - Khi không có quyền admin hoặc user không tồn tại
      */
     @Transactional
-    public Map<String, Object> hardDeleteUser(User currentUser, UUID targetUserId) {
+    public void hardDeleteUser(User currentUser, UUID targetUserId) {
         // Kiểm tra quyền admin (chỉ admin mới được hard delete)
         if (currentUser.getRole() != UserRole.ADMIN) {
             throw new AppException(AuthenticationErrorCode.ACCESS_DENIED);
@@ -534,56 +493,37 @@ public class AuthService {
                 .orElseThrow(() -> new AppException(AuthenticationErrorCode.USER_NOT_FOUND));
         
         // Lưu thông tin user trước khi xóa để trả về response
-        Map<String, Object> deletedUserInfo = Map.of(
-            "id", targetUser.getId(),
-            "username", targetUser.getUsername(),
-            "email", targetUser.getEmail(),
-            "role", targetUser.getRole().name(),
-            "status", targetUser.getStatus().name(),
-            "createdAt", targetUser.getCreatedAt(),
-            "updatedAt", targetUser.getUpdatedAt()
-        );
-        
-        // Đếm số lượng records bị ảnh hưởng
-        int deletedRecordsCount = 0;
-        
+
         try {
             // Xóa tất cả dữ liệu liên quan đến user
             // Cascade sẽ tự động xóa Profile, Subscription, Payment, UserVerification
             // Cần xóa thủ công các mối quan hệ khác
             
             // Xóa Bookmark (user bookmarked rooms)
-            deletedRecordsCount += userRepository.deleteUserBookmarks(targetUserId);
+            userRepository.deleteUserBookmarks(targetUserId);
             
             // Xóa Review (user reviewed rooms)
-            deletedRecordsCount += userRepository.deleteUserReviews(targetUserId);
+            userRepository.deleteUserReviews(targetUserId);
             
             // Xóa Report (user reported content)
-            deletedRecordsCount += userRepository.deleteUserReports(targetUserId);
+            userRepository.deleteUserReports(targetUserId);
             
             // Xóa Notification (user received notifications)
-            deletedRecordsCount += userRepository.deleteUserNotifications(targetUserId);
+            userRepository.deleteUserNotifications(targetUserId);
             
             // Xóa Room và các mối quan hệ liên quan (nếu user là landlord)
             if (targetUser.getRole() == UserRole.LANDLORD) {
-                deletedRecordsCount += userRepository.deleteUserRoomsAndRelated(targetUserId);
+                userRepository.deleteUserRoomsAndRelated(targetUserId);
             }
             
             // Xóa UserVerification (user verification records)
-            deletedRecordsCount += userRepository.deleteUserVerifications(targetUserId);
+            userRepository.deleteUserVerifications(targetUserId);
             
             // Cuối cùng xóa User (cascade sẽ xóa Profile, Subscription, Payment)
             userRepository.delete(targetUser);
-            deletedRecordsCount += 1; // User record
             
-            log.info("Admin {} hard deleted user: {} and {} related records", 
-                    currentUser.getUsername(), targetUser.getUsername(), deletedRecordsCount);
-            
-            return Map.of(
-                "deletedUser", deletedUserInfo,
-                "deletedRecordsCount", deletedRecordsCount,
-                "message", "User and all related data have been permanently deleted from database"
-            );
+            log.info("Admin {} hard deleted user: {}.",
+                    currentUser.getUsername(), targetUser.getUsername());
             
         } catch (Exception e) {
             log.error("Error during hard delete of user {}: {}", targetUser.getUsername(), e.getMessage());
@@ -593,16 +533,6 @@ public class AuthService {
     
     /**
      * Gửi email reset password
-     * <p>
-     * Quy trình:
-     * 1. Kiểm tra email có tồn tại trong hệ thống không
-    2. Tạo reset token và lưu vào database
-    3. Gửi email chứa reset link
-    4. Trả về response thành công
-     * 
-     * @param request - Thông tin email cần reset password
-     * @return ForgotPasswordResponse - Response chứa thông báo
-     * @throws AppException - Khi email không tồn tại hoặc có lỗi xảy ra
      */
     @Transactional
     public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
@@ -641,17 +571,6 @@ public class AuthService {
     
     /**
      * Reset password với token
-     * <p>
-     * Quy trình:
-     * 1. Validate reset token
-     * 2. Tìm user từ token
-     * 3. Cập nhật password mới
-     * 4. Xóa token đã sử dụng
-     * 5. Trả về response thành công
-     * 
-     * @param request - Thông tin token và password mới
-     * @return ResetPasswordResponse - Response chứa thông báo
-     * @throws AppException - Khi token không hợp lệ hoặc có lỗi xảy ra
      */
     @Transactional
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {

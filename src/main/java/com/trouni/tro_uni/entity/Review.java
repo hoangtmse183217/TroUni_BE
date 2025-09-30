@@ -3,6 +3,7 @@ package com.trouni.tro_uni.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -33,8 +34,8 @@ public class Review {
     
     @Column
     private Integer score; // Rating from 1 to 5
-    
-    @Column(columnDefinition = "TEXT")
+
+    @Nationalized
     private String comment;
     
     @Column(name = "created_at")

@@ -46,34 +46,9 @@ public class UserController {
 
     /**
      * API lấy danh sách tất cả users
-     * <p>
+
      * Endpoint: GET /api/debug/users
-     * <p>
-     * Response:
-     * [
-     *   {
-     *     "id": 1,
-     *     "username": "testuser",
-     *     "email": "test@example.com",
-     *     "role": "STUDENT",
-     *     "phoneVerified": false,
-     *     "idVerificationStatus": "NOT_VERIFIED",
-     *     "createdAt": "2024-01-01T10:00:00",
-     *     "updatedAt": "2024-01-01T10:00:00",
-     *     "profile": {
-     *       "id": 1,
-     *       "fullName": "Test User",
-     *       "gender": null,
-     *       "phoneNumber": null,
-     *       "avatarUrl": null,
-     *       "badge": null
-     *     }
-     *   }
-     * ]
-     * <p>
-     * Lưu ý: Sử dụng Map thay vì trả về User entity trực tiếp để tránh circular reference
-     * giữa User và Profile entities
-     * 
+
      * @return ResponseEntity - Danh sách users dưới dạng Map
      */
 
@@ -100,20 +75,9 @@ public class UserController {
 
     /**
      * API kiểm tra token có bị blacklist không
-     * <p>
+
      * Endpoint: POST /api/debug/check-token
-     * <p>
-     * Request body:
-     * {
-     *   "token": "JWT_TOKEN"
-     * }
-     * <p>
-     * Response:
-     * {
-     *   "isBlacklisted": true/false,
-     *   "message": "Token status"
-     * }
-     * 
+
      * @param request - Map chứa token
      * @return ResponseEntity - Kết quả kiểm tra token
      */
@@ -141,16 +105,9 @@ public class UserController {
 
     /**
      * API lấy thống kê blacklist
-     * <p>
+
      * Endpoint: GET /api/debug/blacklist-stats
-     * <p>
-     * Response:
-     * {
-     *   "totalBlacklisted": 5,
-     *   "expiredTokens": 2,
-     *   "activeTokens": 3
-     * }
-     * 
+
      * @return ResponseEntity - Thống kê blacklist
      */
     @GetMapping("/blacklist-stats")
@@ -171,34 +128,9 @@ public class UserController {
     
     /**
      * API cập nhật thông tin user của bản thân
-     * <p>
+
      * Endpoint: PUT /api/users/me
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * Content-Type: application/json
-     * <p>
-     * Request Body:
-     * {
-     *   "username": "new_username",
-     *   "email": "new_email@example.com"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "User updated successfully!",
-     *   "data": {
-     *     "id": "uuid",
-     *     "username": "new_username",
-     *     "email": "new_email@example.com",
-     *     "role": "STUDENT",
-     *     "status": "ACTIVE",
-     *     "createdAt": "2024-01-01T00:00:00",
-     *     "updatedAt": "2024-01-01T00:00:00"
-     *   }
-     * }
-     * 
+
      * @param updateRequest - Thông tin cập nhật user
      * @return ResponseEntity - Response chứa user đã cập nhật
      */
@@ -220,39 +152,9 @@ public class UserController {
     
     /**
      * API admin/manager cập nhật thông tin user khác
-     * <p>
+
      * Endpoint: PUT /api/users/{userId}
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * Content-Type: application/json
-     * <p>
-     * Path Variables:
-     * userId - UUID của user cần cập nhật
-     * <p>
-     * Request Body:
-     * {
-     *   "username": "new_username",
-     *   "email": "new_email@example.com",
-     *   "role": "LANDLORD",
-     *   "status": "ACTIVE"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "User updated successfully!",
-     *   "data": {
-     *     "id": "uuid",
-     *     "username": "new_username",
-     *     "email": "new_email@example.com",
-     *     "role": "LANDLORD",
-     *     "status": "ACTIVE",
-     *     "createdAt": "2024-01-01T00:00:00",
-     *     "updatedAt": "2024-01-01T00:00:00"
-     *   }
-     * }
-     * 
+
      * @param userId - UUID của user cần cập nhật
      * @param updateRequest - Thông tin cập nhật user
      * @return ResponseEntity - Response chứa user đã cập nhật
@@ -275,30 +177,9 @@ public class UserController {
     
     /**
      * API vô hiệu hóa tài khoản user (soft delete)
-     * <p>
+
      * Endpoint: DELETE /api/users/{userId}
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * <p>
-     * Path Variables:
-     * userId - UUID của user cần vô hiệu hóa
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "User deleted successfully!",
-     *   "data": {
-     *     "id": "uuid",
-     *     "username": "username",
-     *     "email": "email@example.com",
-     *     "role": "STUDENT",
-     *     "status": "DELETED",
-     *     "createdAt": "2024-01-01T00:00:00",
-     *     "updatedAt": "2024-01-01T00:00:00"
-     *   }
-     * }
-     * 
+
      * @param userId - UUID của user cần vô hiệu hóa
      * @return ResponseEntity - Response chứa user đã bị vô hiệu hóa
      */
@@ -320,49 +201,18 @@ public class UserController {
     
     /**
      * API xóa hoàn toàn user khỏi database (hard delete) - Chỉ dành cho Admin
-     * <p>
+
      * Endpoint: DELETE /api/users/{userId}/hard-delete
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * <p>
-     * Path Variables:
-     * userId - UUID của user cần xóa hoàn toàn
-     * <p>
-     * Chức năng:
-     * - Xóa tất cả dữ liệu liên quan đến user
-     * - Xóa Profile, Bookmark, Review, Report, Notification, Subscription, Payment, UserVerification
-     * - Xóa Room và các mối quan hệ liên quan (RoomImage, Review, Bookmark)
-     * - Xóa hoàn toàn user khỏi database
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "User permanently deleted from database!",
-     *   "data": {
-     *     "deletedUser": {
-     *       "id": "uuid",
-     *       "username": "username",
-     *       "email": "email@example.com",
-     *       "role": "STUDENT",
-     *       "status": "ACTIVE",
-     *       "createdAt": "2024-01-01T00:00:00",
-     *       "updatedAt": "2024-01-01T00:00:00"
-     *     },
-     *     "deletedRecordsCount": 15,
-     *     "message": "User and all related data have been permanently deleted from database"
-     *   }
-     * }
-     * 
+
      * @param userId - UUID của user cần xóa hoàn toàn
      * @return ResponseEntity - Response chứa thông tin user đã xóa và số lượng records bị ảnh hưởng
      */
     @DeleteMapping("/{userId}/hard-delete")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> hardDeleteUser(@PathVariable UUID userId) {
+    public ResponseEntity<ApiResponse<String>> hardDeleteUser(@PathVariable UUID userId) {
         try {
             User currentUser = authService.getCurrentUser();
-            Map<String, Object> result = authService.hardDeleteUser(currentUser, userId);
-            return ResponseEntity.ok(ApiResponse.success("User permanently deleted from database!", result));
+            authService.hardDeleteUser(currentUser, userId);
+            return ResponseEntity.ok(ApiResponse.success("User permanently deleted from database!", userId.toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(e.getErrorCode(), e.getErrorMessage()));

@@ -36,29 +36,9 @@ public class ProfileController {
     
     /**
      * API lấy thông tin profile của user hiện tại
-     * <p>
+
      * Endpoint: GET /api/profile/me
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "Profile retrieved successfully!",
-     *   "data": {
-     *     "id": "uuid",
-     *     "userId": "uuid",
-     *     "fullName": "Full Name",
-     *     "gender": "male",
-     *     "phoneNumber": "0123456789",
-     *     "avatarUrl": "https://example.com/avatar.jpg",
-     *     "badge": "Tin uy tín",
-     *     "createdAt": "2024-01-01T00:00:00",
-     *     "updatedAt": "2024-01-01T00:00:00"
-     *   }
-     * }
-     * 
+
      * @return ResponseEntity - Response chứa thông tin profile
      */
     @GetMapping("/me")
@@ -70,32 +50,9 @@ public class ProfileController {
     
     /**
      * API lấy thông tin profile theo user ID
-     * <p>
+
      * Endpoint: GET /api/profile/{userId}
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * <p>
-     * Path Variables:
-     * userId - UUID của user
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "Profile retrieved successfully!",
-     *   "data": {
-     *     "id": "uuid",
-     *     "userId": "uuid",
-     *     "fullName": "Full Name",
-     *     "gender": "male",
-     *     "phoneNumber": "0123456789",
-     *     "avatarUrl": "https://example.com/avatar.jpg",
-     *     "badge": "Tin uy tín",
-     *     "createdAt": "2024-01-01T00:00:00",
-     *     "updatedAt": "2024-01-01T00:00:00"
-     *   }
-     * }
-     * 
+
      * @param userId - UUID của user
      * @return ResponseEntity - Response chứa thông tin profile
      */
@@ -115,39 +72,9 @@ public class ProfileController {
     
     /**
      * API cập nhật thông tin profile của user hiện tại
-     * <p>
+
      * Endpoint: PUT /api/profile/me
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * Content-Type: application/json
-     * <p>
-     * Request Body:
-     * {
-     *   "fullName": "New Full Name",
-     *   "gender": "male",
-     *   "phoneNumber": "0123456789",
-     *   "avatarUrl": "https://example.com/new-avatar.jpg",
-     *   "badge": "New Badge"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "Profile updated successfully!",
-     *   "data": {
-     *     "id": "uuid",
-     *     "userId": "uuid",
-     *     "fullName": "New Full Name",
-     *     "gender": "male",
-     *     "phoneNumber": "0123456789",
-     *     "avatarUrl": "https://example.com/new-avatar.jpg",
-     *     "badge": "New Badge",
-     *     "createdAt": "2024-01-01T00:00:00",
-     *     "updatedAt": "2024-01-01T00:00:00"
-     *   }
-     * }
-     * 
+
      * @param updateRequest - Thông tin cập nhật profile
      * @return ResponseEntity - Response chứa profile đã cập nhật
      */

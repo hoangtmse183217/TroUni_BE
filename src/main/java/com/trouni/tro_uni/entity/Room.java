@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.trouni.tro_uni.enums.RoomType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,19 +30,21 @@ public class Room {
     @JoinColumn(name = "owner_user_id", nullable = false)
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private User owner; // Must be a user with landlord role
-    
-    @Column(nullable = false, length = 255)
+
+    @Nationalized
+    @Column(nullable = false)
     private String title;
-    
-    @Column(columnDefinition = "TEXT")
+
+    @Nationalized
+    @Column(name = "description")
     private String description;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "room_type", nullable = false)
     private RoomType roomType = RoomType.PHONG_TRO;
-    
-    // Address information
-    @Column(name = "street_address", length = 255)
+
+    @Nationalized
+    @Column(name = "street_address")
     private String streetAddress;
     
     @Column(length = 100)
@@ -59,7 +62,7 @@ public class Room {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
     
-    @Column(name = "price_per_month", precision = 12, scale = 0, nullable = false)
+    @Column(name = "price_per_month", precision = 12, nullable = false)
     private BigDecimal pricePerMonth;
     
     @Column(name = "area_sqm", precision = 5, scale = 2)

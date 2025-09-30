@@ -3,6 +3,7 @@ package com.trouni.tro_uni.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,8 +24,8 @@ public class Notification {
     @JoinColumn(name = "user_id", nullable = false) // The receiver
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private User user;
-    
-    @Column(nullable = false, columnDefinition = "TEXT")
+
+    @Nationalized
     private String content;
     
     @Column(name = "link_url")

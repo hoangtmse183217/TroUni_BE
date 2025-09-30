@@ -5,6 +5,8 @@ import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
 import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 @Setter
 @Getter
@@ -58,7 +60,7 @@ public class AppException extends RuntimeException {
     }
 
     // Helper method để lấy status code
-    public org.springframework.http.HttpStatusCode getStatusCode() {
+    public HttpStatusCode getStatusCode() {
         if (tokenErrorCode != null) {
             return tokenErrorCode.getStatusCode();
         }
@@ -68,6 +70,6 @@ public class AppException extends RuntimeException {
         if (generalErrorCode != null) {
             return generalErrorCode.getStatusCode();
         }
-        return org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 }

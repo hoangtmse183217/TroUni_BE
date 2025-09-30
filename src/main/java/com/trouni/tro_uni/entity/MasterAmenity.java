@@ -2,6 +2,7 @@ package com.trouni.tro_uni.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.util.UUID;
 
@@ -18,7 +19,8 @@ public class MasterAmenity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    
+
+    @Nationalized
     @Column(nullable = false, unique = true, length = 100)
     private String name; // e.g., Wi-Fi, Air Conditioner, Parking
     
