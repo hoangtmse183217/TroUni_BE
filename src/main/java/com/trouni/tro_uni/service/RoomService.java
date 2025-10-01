@@ -1,0 +1,198 @@
+package com.trouni.tro_uni.service;
+
+import com.trouni.tro_uni.dto.request.room.RoomRequest;
+import com.trouni.tro_uni.dto.request.room.UpdateRoomRequest;
+import com.trouni.tro_uni.dto.response.room.RoomResponse;
+import com.trouni.tro_uni.entity.Room;
+import com.trouni.tro_uni.entity.User;
+import com.trouni.tro_uni.enums.UserRole;
+import com.trouni.tro_uni.exception.AppException;
+import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
+import com.trouni.tro_uni.repository.RoomRepository;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class RoomService {
+    RoomRepository roomRepository;
+
+    /**
+     * Create a new room listing
+     * <p>
+     * @param currentUser - The landlord user creating the room
+     * @param request - Room creation details including title, price, location, etc
+     * @return RoomResponse - Details of the created room
+     * @throws AppException - If user is not authorized as landlord
+     */
+    public RoomResponse createRoom(User currentUser, RoomRequest request) {
+        if(currentUser.getRole() != UserRole.LANDLORD){
+            throw new AppException(RoomErrorCode.NOT_LANDLORD);
+        }
+        Room room = Room.builder()
+                .owner(currentUser)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .roomType(request.getRoomType())
+                .streetAddress(request.getStreetAddress())
+                .city(request.getCity())
+                .district(request.getDistrict())
+                .ward(request.getWard())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .pricePerMonth(request.getPricePerMonth())
+                .areaSqm(request.getAreaSqm())
+                .status("available")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Room savedRoom = roomRepository.save(room);
+        log.info("Created new room with ID: {} by user: {}", savedRoom.getId(), currentUser.getUsername());
+        return RoomResponse.fromRoom(savedRoom);
+    }
+
+    /**
+     * Get room details by ID
+     * <p>
+     * @param roomId - Unique identifier of the room
+     * @return RoomResponse - Room details including images and amenities
+     * @throws AppException - When room is not found
+     */
+    public RoomResponse getRoomById(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        room.setViewCount(room.getViewCount() + 1);
+        roomRepository.save(room);
+
+        log.info("Retrieved room details for ID: {}", roomId);
+        return RoomResponse.fromRoom(room);
+    }
+
+    /**
+     * Update room information
+     * <p>
+     * @param currentUser - The landlord user updating the room
+     * @param roomId - ID of the room to update
+     * @param request - Updated room details
+     * @return RoomResponse - Updated room information
+     * @throws AppException - When room is not found or user is not the owner
+     */
+    public RoomResponse updateRoom(User currentUser, UUID roomId, UpdateRoomRequest request) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        if (!room.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
+        }
+
+        room.setTitle(request.getTitle());
+        room.setDescription(request.getDescription());
+        room.setRoomType(request.getRoomType());
+        room.setStreetAddress(request.getStreetAddress());
+        room.setCity(request.getCity());
+        room.setDistrict(request.getDistrict());
+        room.setWard(request.getWard());
+        room.setLatitude(request.getLatitude());
+        room.setLongitude(request.getLongitude());
+        room.setPricePerMonth(request.getPricePerMonth());
+        room.setAreaSqm(request.getAreaSqm());
+        room.setStatus(request.getStatus());
+        room.setUpdatedAt(LocalDateTime.now());
+
+        Room updatedRoom = roomRepository.save(room);
+        log.info("Updated room with ID: {} by user: {}", roomId, currentUser.getUsername());
+        return RoomResponse.fromRoom(updatedRoom);
+    }
+
+    /**
+     * Delete a room listing
+     * <p>
+     * @param currentUser - The landlord user deleting the room
+     * @param roomId - ID of the room to delete
+     * @throws AppException - When room is not found or user is not the owner
+     */
+    public void deleteRoom(User currentUser, UUID roomId) {
+        Room room = roomRepository.findById(roomId).
+                orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        if (!room.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
+        }
+
+        roomRepository.delete(room);
+        log.info("Deleted room with ID: {} by user: {}", roomId, currentUser.getUsername());
+    }
+
+    /**
+     * Get paginated list of available rooms
+     * <p>
+     * @param pageable - Pagination information
+     * @return Page<RoomResponse> - Paginated list of rooms
+     */
+    public Page<RoomResponse> getAllRooms(Pageable pageable) {
+        return roomRepository.findByStatus("available", pageable)
+                .map(RoomResponse::fromRoom);
+    }
+
+    /**
+     * Search rooms with filters
+     * @param city - City filter
+     * @param district - District filter
+     * @param minPrice - Minimum price
+     * @param maxPrice - Maximum price
+     * @param minArea - Minimum area
+     * @param maxArea - Maximum area
+     * @param pageable - Pagination information
+     * @return Page<RoomResponse> - Filtered and paginated rooms
+     */
+//    public Page<RoomResponse> searchRooms(
+//            String city,
+//            String district,
+//            Double minPrice,
+//            Double maxPrice,
+//            Double minArea,
+//            Double maxArea,
+//            Pageable pageable
+//    ) {
+//        // Convert Double to BigDecimal for price comparison
+//        BigDecimal minPriceDecimal = minPrice != null ? BigDecimal.valueOf(minPrice) : null;
+//        BigDecimal maxPriceDecimal = maxPrice != null ? BigDecimal.valueOf(maxPrice) : null;
+//        BigDecimal minAreaDecimal = minArea != null ? BigDecimal.valueOf(minArea) : null;
+//        BigDecimal maxAreaDecimal = maxArea != null ? BigDecimal.valueOf(maxArea) : null;
+//
+//        return roomRepository.findByFilters(
+//                city,
+//                district,
+//                minPriceDecimal,
+//                maxPriceDecimal,
+//                minAreaDecimal,
+//                maxAreaDecimal,
+//                "available",
+//                pageable
+//        ).map(RoomResponse::fromRoom);
+//    }
+
+    /**
+     * Get rooms owned by a specific user
+     * <p>
+     * @param currentUser - The user whose rooms to retrieve
+     * @param pageable - Pagination information
+     * @return Page<RoomResponse> - Paginated list of user's rooms
+     */
+//    public Page<RoomResponse> getUserRooms(User currentUser, Pageable pageable) {
+//        return roomRepository.findByOwnerId(currentUser.getId(), pageable)
+//                .map(RoomResponse::fromRoom);
+//    }
+}

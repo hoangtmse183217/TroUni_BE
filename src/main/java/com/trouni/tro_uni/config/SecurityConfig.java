@@ -155,7 +155,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/**",           // Auth endpoints (login, signup, logout)
                                 "/public/**",         // Public endpoints
-                                "/email-verification/**"  // Email verification endpoints
+                                "/email-verification/**",  // Email verification endpoints
+                                "/rooms/**" ,// Room endpoints
+                                "/room-images/**",// Room-image endpoints
+                                "/reviews/**",// Review endpoints
+                                "/master-amenities/**"//Master-amenity endpoints
+
                         ).permitAll()
 
                         // Tất cả các endpoint khác cần authentication

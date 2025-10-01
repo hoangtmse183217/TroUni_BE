@@ -34,4 +34,10 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     long countByRoom(@Param("room") Room room);
     
     boolean existsByUserAndRoom(User user, Room room);
+
+    boolean findByUserIdAndRoomId(User user, UUID roomId);
+
+    // Fix: Thay đổi method để check existence đúng cách
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM Review r WHERE r.user = :user AND r.room.id = :roomId")
+    boolean existsByUserAndRoomId(@Param("user") User user, @Param("roomId") UUID roomId);
 }
