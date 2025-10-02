@@ -25,22 +25,25 @@ public class RoomImageController {
 
     /**
      * Add a new image to a room
+     *
      * @param currentUser - Authenticated user (must be room owner)
-     * @param roomId - The ID of the room to add the image to
-     * @param request - The image information to be added
+     * @param roomId      - The ID of the room to add the image to
+     * @param request     - The image information to be added
      * @return ResponseEntity<RoomImageResponse>
      */
     @PostMapping("/{roomId}")
-    public ResponseEntity<RoomImageResponse> createRoomImage(
+    public ResponseEntity<List<RoomImageResponse>> createRoomImages(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID roomId,
             @Valid @RequestBody RoomImageRequest request
     ) {
-        return ResponseEntity.ok(roomImageService.createRoomImage(currentUser, roomId, request));
+        return ResponseEntity.ok(roomImageService.createRoomImages(currentUser, roomId, request));
     }
+
 
     /**
      * Get all images for a specific room
+     *
      * @param roomId - The ID of the room
      * @return ResponseEntity<List<RoomImageResponse>>
      */
@@ -53,8 +56,9 @@ public class RoomImageController {
 
     /**
      * Delete an image from a room
+     *
      * @param currentUser - Authenticated user (must be room owner)
-     * @param imageId - The ID of the image to be deleted
+     * @param imageId     - The ID of the image to be deleted
      * @return ResponseEntity<Void>
      */
     @DeleteMapping("/{imageId}")

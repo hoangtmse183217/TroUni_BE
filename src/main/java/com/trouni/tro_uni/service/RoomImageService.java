@@ -31,38 +31,43 @@ public class RoomImageService {
     /**
      * Add a new image to a room
      * <p>
+     *
      * @param currentUser - The landlord user adding the image
-     * @param roomId - ID of the room to add the image to
-     * @param request - Image details, e.g., URL
+     * @param roomId      - ID of the room to add the image to
+     * @param request     - Image details, e.g., URL
      * @return RoomImageResponse - Details of the created image
      * @throws AppException - If room is not found or user is not the owner
      */
-    public RoomImageResponse createRoomImage(User currentUser, UUID roomId, RoomImageRequest request) {
+    public List<RoomImageResponse> createRoomImages(User currentUser, UUID roomId, RoomImageRequest request) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
         if (!room.getOwner().getId().equals(currentUser.getId())) {
             throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
         }
-
-        if(currentUser.getRole() != UserRole.LANDLORD){
+        if (currentUser.getRole() != UserRole.LANDLORD) {
             throw new AppException(RoomErrorCode.NOT_LANDLORD);
         }
 
-        RoomImage roomImage = RoomImage.builder()
-                .room(room)
-                .imageUrl(request.getImageUrl())
-                .primary(true)
-                .build();
+        List<RoomImage> images = request.getImageUrl().stream()
+                .map(url -> RoomImage.builder()
+                        .room(room)
+                        .imageUrl(url)
+                        .primary(false) // mặc định
+                        .build())
+                .toList();
 
-        RoomImage savedImage = roomImageRepository.save(roomImage);
-        log.info("Added new image with ID: {} to room ID: {} by user: {}", savedImage.getId(), roomId, currentUser.getUsername());
-        return RoomImageResponse.fromRoomImage(savedImage);
+        List<RoomImage> saved = roomImageRepository.saveAll(images);
+
+        return saved.stream()
+                .map(RoomImageResponse::fromRoomImage)
+                .toList();
     }
 
     /**
      * Get all images for a specific room
      * <p>
+     *
      * @param roomId - Unique identifier of the room
      * @return List<RoomImageResponse> - A list of images for the room
      * @throws AppException - When room is not found
@@ -83,12 +88,13 @@ public class RoomImageService {
     /**
      * Delete an image from a room
      * <p>
+     *
      * @param currentUser - The landlord user deleting the image
-     * @param imageId - ID of the image to delete
+     * @param imageId     - ID of the image to delete
      * @throws AppException - When image is not found or user is not the owner
      */
     public void deleteRoomImage(User currentUser, UUID imageId) {
-        if(currentUser.getRole() != UserRole.LANDLORD){
+        if (currentUser.getRole() != UserRole.LANDLORD) {
             throw new AppException(RoomErrorCode.NOT_LANDLORD);
         }
         RoomImage roomImage = roomImageRepository.findById(imageId)
