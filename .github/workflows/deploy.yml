@@ -66,7 +66,7 @@ jobs:
 
           # Triển khai dịch vụ Cloud Run
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --set-env-vars="JWT_SIGNER_KEY=${{ secrets.JWT_SECRET }},PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_ID }},PAYPAL_CLIENT_SECRET=${{ secrets.PAYPAL_SECRET }},SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }},SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            --set-env-vars="JWT_SIGNER_KEY=${{ secrets.JWT_SECRECT }},SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }},SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }},SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}" \
             --image=$IMAGE_TAG \
             --platform=managed \
             --region=${{ env.REGION }} \

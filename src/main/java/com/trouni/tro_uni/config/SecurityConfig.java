@@ -96,7 +96,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Cho phép origin từ frontend
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("https://app.swaggerhub.com"));
 
         // Cho phép tất cả các HTTP methods
         configuration.addAllowedMethod("*");

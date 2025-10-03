@@ -56,6 +56,12 @@
 	<dependencies>
 
 		<dependency>
+			<!-- Hoặc nếu chỉ dùng JDBC Connector: -->
+			<groupId>com.google.cloud</groupId>
+            <artifactId>spring-cloud-gcp-starter-sql-postgresql</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>org.hibernate.orm</groupId>
 			<artifactId>hibernate-core</artifactId>
 			<version>6.5.2.Final</version>

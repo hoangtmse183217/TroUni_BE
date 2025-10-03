@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Postman API Testing Files ###
+*Postman*.json
+POSTMAN_README.md
+*.TroUni_Complete_API_Collection.json
