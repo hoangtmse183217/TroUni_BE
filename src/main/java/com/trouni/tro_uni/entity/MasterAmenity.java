@@ -3,6 +3,7 @@ package com.trouni.tro_uni.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 import java.util.List;
@@ -28,5 +29,5 @@ public class MasterAmenity {
     
     // Many-to-many relationship with Room
     @ManyToMany(mappedBy = "amenities")
-    private List<Room> rooms;
+    private List<Room> rooms = new ArrayList<>();
 }

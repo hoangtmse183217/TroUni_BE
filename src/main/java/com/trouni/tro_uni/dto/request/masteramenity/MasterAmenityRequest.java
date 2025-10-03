@@ -1,6 +1,6 @@
 package com.trouni.tro_uni.dto.request.masteramenity;
 
-import com.trouni.tro_uni.dto.response.room.RoomResponse;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,5 +16,4 @@ import lombok.experimental.FieldDefaults;
 public class MasterAmenityRequest {
     String name;
     String icon;
-    RoomResponse room;
 }

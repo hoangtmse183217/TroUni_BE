@@ -3,6 +3,7 @@ package com.trouni.tro_uni.service;
 import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
 import com.trouni.tro_uni.dto.response.MasterAmenity.MasterAmenityResponse;
 import com.trouni.tro_uni.entity.MasterAmenity;
+import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
@@ -36,23 +37,30 @@ public class MasterAmenityService {
      * @return MasterAmenityResponse containing the created amenity details
      * @throws AppException if an amenity with the same name already exists
      */
-    public MasterAmenityResponse createMasterAmenity(MasterAmenityRequest request) {
-        // Check if amenity with the same name already exists
+    public MasterAmenityResponse createMasterAmenity(UUID roomId, MasterAmenityRequest request) {
+        // Kiểm tra trùng tên
         if (masterAmenityRepository.existsByName(request.getName())) {
             throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
         }
 
-        // Create new amenity entity and set properties
+        // Tạo tiện ích mới
         MasterAmenity amenity = MasterAmenity.builder()
                 .name(request.getName())
                 .iconUrl(request.getIcon())
                 .build();
 
-        // Save the amenity to database
         MasterAmenity savedAmenity = masterAmenityRepository.save(amenity);
-        log.info("Created new master amenity with ID: {}", savedAmenity.getId());
+
+        // Gán vào phòng
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+        room.getAmenities().add(savedAmenity);
+        roomRepository.save(room);
+
+        log.info("Created new master amenity '{}' and added to room '{}'", savedAmenity.getName(), room.getId());
         return MasterAmenityResponse.fromMasterAmenity(savedAmenity);
     }
+
 
     /**
      * Retrieves all master amenities from the database.
@@ -93,41 +101,41 @@ public class MasterAmenityService {
      * Updates an existing master amenity with new information.
      *
      * @param amenityId The UUID of the amenity to update
-     * @param request The master amenity request containing updated name and icon URL
+     * @param request   The master amenity request containing updated name and icon URL
      * @return MasterAmenityResponse containing the updated amenity details
      * @throws AppException if the amenity is not found or if another amenity with the new name already exists
      */
-    public MasterAmenityResponse updateMasterAmenity(UUID amenityId, MasterAmenityRequest request) {
-        // Find the existing amenity
-        MasterAmenity amenity = masterAmenityRepository.findById(amenityId)
-                .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
-
-        // Check if another amenity with the new name already exists (only if name is being changed)
-        if (!amenity.getName().equals(request.getName()) && masterAmenityRepository.existsByName(request.getName())) {
-            throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
-        }
-
-        // Update amenity properties
-        amenity.setName(request.getName());
-        amenity.setIconUrl(request.getIcon());
-
-        // Save the updated amenity
-        MasterAmenity updatedAmenity = masterAmenityRepository.save(amenity);
-        log.info("Updated master amenity with ID: {}", updatedAmenity.getId());
-        return MasterAmenityResponse.fromMasterAmenity(updatedAmenity);
-    }
+//    public MasterAmenityResponse updateMasterAmenity(UUID amenityId, MasterAmenityRequest request) {
+//        // Find the existing amenity
+//        MasterAmenity amenity = masterAmenityRepository.findById(amenityId)
+//                .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
+//
+//        // Check if another amenity with the new name already exists (only if name is being changed)
+//        if (!amenity.getName().equals(request.getName()) && masterAmenityRepository.existsByName(request.getName())) {
+//            throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
+//        }
+//
+//        // Update amenity properties
+//        amenity.setName(request.getName());
+//        amenity.setIconUrl(request.getIcon());
+//
+//        // Save the updated amenity
+//        MasterAmenity updatedAmenity = masterAmenityRepository.save(amenity);
+//        log.info("Updated master amenity with ID: {}", updatedAmenity.getId());
+//        return MasterAmenityResponse.fromMasterAmenity(updatedAmenity);
+//    }
 
     /**
      * Deletes a master amenity from the system.
      * Only users with LANDLORD role are authorized to perform this operation.
      *
      * @param currentUser The user attempting to delete the amenity (must be LANDLORD)
-     * @param amenityId The UUID of the amenity to delete
+     * @param amenityId   The UUID of the amenity to delete
      * @throws AppException if the user doesn't have LANDLORD role or if the amenity is not found
      */
     public void deleteMasterAmenity(User currentUser, UUID amenityId) {
         // Check if current user has permission to delete amenities (must be LANDLORD)
-        if(currentUser.getRole() != UserRole.LANDLORD){
+        if (currentUser.getRole() != UserRole.LANDLORD) {
             throw new AppException(MasterAmenityErrorCode.NO_PERMISSION_TO_MODIFY_MASTER_AMENITY);
         }
 

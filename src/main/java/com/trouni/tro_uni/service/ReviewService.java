@@ -48,9 +48,9 @@
              throw new AppException(ReviewErrorCode.CANNOT_REVIEW_OWN_ROOM);
          }
 
-          if (reviewRepository.existsByUserAndRoomId(currentUser, roomId)) {
-             throw new AppException(ReviewErrorCode.REVIEW_ALREADY_EXISTS);
-         }
+//          if (reviewRepository.existsByUserAndRoomId(currentUser, roomId)) {
+//             throw new AppException(ReviewErrorCode.REVIEW_ALREADY_EXISTS);
+//         }
 
          Review review = Review.builder()
                  .user(currentUser)

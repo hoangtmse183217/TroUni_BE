@@ -1,5 +1,6 @@
 package com.trouni.tro_uni.dto.request.room;
 
+import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
 import com.trouni.tro_uni.enums.RoomType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,7 +12,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -43,8 +43,7 @@ public class RoomRequest {
      String status = "available";
 
      //Related data
-     List<RoomImageRequest> images;
-     List<UUID> amenityIds;
-
+     List<String> images;
+     List<MasterAmenityRequest> amenities;
 
 }

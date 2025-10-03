@@ -35,7 +35,7 @@ public class MasterAmenityController {
             @PathVariable UUID roomId,
             @Valid @RequestBody MasterAmenityRequest request) {
 
-        MasterAmenityResponse response = masterAmenityService.createMasterAmenity(request);
+        MasterAmenityResponse response = masterAmenityService.createMasterAmenity(roomId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -55,12 +55,12 @@ public class MasterAmenityController {
      * @param request - The new details for the amenity.
      * @return ResponseEntity<MasterAmenityResponse>
      */
-    @PutMapping("/{amenityId}")
-    public ResponseEntity<MasterAmenityResponse> updateMasterAmenity(
-            @PathVariable UUID amenityId,
-            @Valid @RequestBody MasterAmenityRequest request) {
-        return ResponseEntity.ok(masterAmenityService.updateMasterAmenity(amenityId, request));
-    }
+//    @PutMapping("/{amenityId}")
+//    public ResponseEntity<MasterAmenityResponse> updateMasterAmenity(
+//            @PathVariable UUID amenityId,
+//            @Valid @RequestBody MasterAmenityRequest request) {
+//        return ResponseEntity.ok(masterAmenityService.updateMasterAmenity(amenityId, request));
+//    }
 
     /**
      * Delete a master amenity.

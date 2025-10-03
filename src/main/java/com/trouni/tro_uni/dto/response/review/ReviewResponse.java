@@ -1,7 +1,6 @@
 package com.trouni.tro_uni.dto.response.review;
 
 import com.trouni.tro_uni.dto.response.UserResponse;
-import com.trouni.tro_uni.dto.response.room.RoomResponse;
 import com.trouni.tro_uni.entity.Review;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +25,7 @@ public class ReviewResponse {
     private UserResponse user;
 
     //Room which got reviewed
-    private RoomResponse room;
+    private UUID roomId;
 
     // Timestamps
     private LocalDateTime createdAt;
@@ -43,7 +42,7 @@ public class ReviewResponse {
                 .id(review.getId())
                 .score(review.getScore())
                 .comment(review.getComment())
-                .room(RoomResponse.fromRoom(review.getRoom()))
+                .roomId(review.getRoom().getId())
                 .user(UserResponse.fromUser(review.getUser()))
                 .createdAt(review.getCreatedAt())
                 .build();
