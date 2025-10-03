@@ -215,6 +215,17 @@ public class RoomService {
     }
 
     /**
+     * Get all rooms without pagination
+     *
+     * @return List of RoomResponse containing all rooms
+     */
+    public List<RoomResponse> getAllRooms() {
+        return roomRepository.findAll().stream()
+                .map(RoomResponse::fromRoom)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Search rooms with filters
      * @param city - City filter
      * @param district - District filter

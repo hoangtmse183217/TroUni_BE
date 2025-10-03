@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,8 +27,9 @@ public class RoomController {
 
     /**
      * Create a new room
+     *
      * @param currentUser - Authenticated user (landlord)
-     * @param request - Room creation details
+     * @param request     - Room creation details
      * @return ResponseEntity<RoomResponse>
      */
     @PostMapping("/room")
@@ -40,6 +42,7 @@ public class RoomController {
 
     /**
      * Get room by ID
+     *
      * @param roomId - Room identifier
      * @return ResponseEntity<RoomResponse>
      */
@@ -52,9 +55,10 @@ public class RoomController {
 
     /**
      * Update room details
+     *
      * @param currentUser - Authenticated user (must be room owner)
-     * @param roomId - Room identifier
-     * @param request - Updated room details
+     * @param roomId      - Room identifier
+     * @param request     - Updated room details
      * @return ResponseEntity<RoomResponse>
      */
     @PutMapping("/{roomId}")
@@ -68,8 +72,9 @@ public class RoomController {
 
     /**
      * Delete a room
+     *
      * @param currentUser - Authenticated user (must be room owner)
-     * @param roomId - Room identifier
+     * @param roomId      - Room identifier
      * @return ResponseEntity<Void>
      */
     @DeleteMapping("/{roomId}")
@@ -83,12 +88,24 @@ public class RoomController {
 
     /**
      * Get all available rooms with pagination
+     *
      * @param pageable - Pagination information
      * @return ResponseEntity<Page<RoomResponse>>
      */
     @GetMapping
     public ResponseEntity<Page<RoomResponse>> getAllRooms(Pageable pageable) {
         return ResponseEntity.ok(roomService.getAllRooms(pageable));
+    }
+
+    /**
+     * Get all available rooms
+     *
+     * @return ResponseEntity<Page<RoomResponse>>
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<RoomResponse>> getAllRooms() {
+        List<RoomResponse> rooms = roomService.getAllRooms();
+        return ResponseEntity.ok(rooms);
     }
 
     /**
