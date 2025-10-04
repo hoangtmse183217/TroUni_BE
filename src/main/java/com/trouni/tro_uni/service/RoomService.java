@@ -1,159 +1,163 @@
 package com.trouni.tro_uni.service;
 
-import com.trouni.tro_uni.dto.response.RoomAnalyticsResponse;
-import com.trouni.tro_uni.dto.response.RoomDetailResponse;
-import com.trouni.tro_uni.dto.response.ReviewSummaryResponse;
+import com.trouni.tro_uni.dto.request.RoomSearchRequest;
+import com.trouni.tro_uni.dto.response.RoomListItemResponse;
+import com.trouni.tro_uni.dto.response.RoomSummaryResponse;
+import com.trouni.tro_uni.dto.response.RoomImagesResponse;
+import com.trouni.tro_uni.dto.response.RoomImageResponse;
 import com.trouni.tro_uni.entity.Room;
-import com.trouni.tro_uni.entity.User;
-import com.trouni.tro_uni.enums.UserRole;
-import com.trouni.tro_uni.exception.AppException;
-import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
-import com.trouni.tro_uni.repository.BookmarkRepository;
-import com.trouni.tro_uni.repository.ReviewRepository;
+import com.trouni.tro_uni.entity.RoomImage;
 import com.trouni.tro_uni.repository.RoomRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.trouni.tro_uni.repository.RoomImageRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-/**
- * RoomService - Service xử lý các thao tác liên quan đến phòng
- * 
- * Chức năng chính:
- * - Xem chi tiết phòng với thông tin đầy đủ
- * - Tăng view count khi xem phòng
- * - Lấy thống kê phòng cho landlord
- * - Quản lý hình ảnh phòng
- */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class RoomService {
-    
-    private final RoomRepository roomRepository;
-    private final ReviewRepository reviewRepository;
-    private final BookmarkRepository bookmarkRepository;
-    
+
+    @Autowired
+    private RoomRepository roomRepository;
+
+    @Autowired
+    private RoomImageRepository roomImageRepository;
+
     /**
-     * Lấy thông tin chi tiết phòng cho Student users
-     * Tự động tăng view count khi xem
+     * Search rooms with multiple filters: location, price range, roomType
      */
-    @Transactional
-    public RoomDetailResponse getRoomDetail(UUID roomId) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new AppException(GeneralErrorCode.RESOURCE_NOT_FOUND));
-        
-        // Tăng view count
-        room.setViewCount(room.getViewCount() + 1);
-        roomRepository.save(room);
-        
-        RoomDetailResponse response = RoomDetailResponse.fromRoom(room);
-        
-        // Thêm review summary
-        response.setReviewSummary(getReviewSummary(room));
-        
-        // Thêm analytics nếu user có quyền xem
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            String username = auth.getName();
-            // Chỉ hiển thị analytics cho landlord của phòng hoặc admin
-            if (isUserAuthorizedForAnalytics(room, username)) {
-                response.setAnalytics(getRoomAnalytics(room));
-            }
+    public List<RoomListItemResponse> searchRooms(RoomSearchRequest request) {
+        List<Room> rooms = roomRepository.findAll();
+
+        // filter by location (city, district)
+        if (request.getLocation() != null) {
+            String[] loc = request.getLocation().split(",");
+            String city = loc.length > 0 ? loc[0].trim() : null;
+            String district = loc.length > 1 ? loc[1].trim() : null;
+
+            rooms = rooms.stream()
+                    .filter(r -> (city == null || city.equalsIgnoreCase(r.getCity())))
+                    .filter(r -> (district == null || district.equalsIgnoreCase(r.getDistrict())))
+                    .collect(Collectors.toList());
         }
-        
-        return response;
+
+        // filter by price range
+        if (request.getMinPrice() != null && request.getMaxPrice() != null) {
+            BigDecimal min = BigDecimal.valueOf(request.getMinPrice());
+            BigDecimal max = BigDecimal.valueOf(request.getMaxPrice());
+            rooms = rooms.stream()
+                    .filter(r -> r.getPricePerMonth() != null
+                            && r.getPricePerMonth().compareTo(min) >= 0
+                            && r.getPricePerMonth().compareTo(max) <= 0)
+                    .collect(Collectors.toList());
+        }
+
+        // filter by room type
+        if (request.getRoomType() != null) {
+            rooms = rooms.stream()
+                    .filter(r -> request.getRoomType().equals(r.getRoomType()))
+                    .collect(Collectors.toList());
+        }
+
+        return rooms.stream()
+                .map(this::toRoomListItemResponse)
+                .collect(Collectors.toList());
     }
-    
+
     /**
-     * Lấy danh sách phòng có sẵn với phân trang
+     * Get all public rooms
      */
-    public Page<RoomDetailResponse> getAvailableRooms(Pageable pageable) {
-        Page<Room> rooms = roomRepository.findByStatus("available", pageable);
-        return rooms.map(room -> {
-            RoomDetailResponse response = RoomDetailResponse.fromRoom(room);
-            response.setReviewSummary(getReviewSummary(room));
-            return response;
-        });
+    public List<RoomListItemResponse> getPublicRooms() {
+        return roomRepository.findAll().stream()
+                .map(this::toRoomListItemResponse)
+                .collect(Collectors.toList());
     }
-    
+
     /**
-     * Tìm kiếm phòng theo nhiều tiêu chí
+     * Lấy tóm tắt thông tin của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về null.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
      */
-    public Page<RoomDetailResponse> searchRooms(String city, String district, 
-                                               java.math.BigDecimal minPrice, 
-                                               java.math.BigDecimal maxPrice, 
-                                               Pageable pageable) {
-        Page<Room> rooms = roomRepository.findByMultipleCriteria(
-            "available", city, district, minPrice, maxPrice, pageable);
-        
-        return rooms.map(room -> {
-            RoomDetailResponse response = RoomDetailResponse.fromRoom(room);
-            response.setReviewSummary(getReviewSummary(room));
-            return response;
-        });
+    public RoomSummaryResponse getRoomSummary(Long roomId) {
+        try {
+            Optional<Room> roomOpt = roomRepository.findAll().stream()
+                    .filter(r -> r.getId().getMostSignificantBits() == roomId)
+                    .findFirst();
+            Room room = roomOpt.orElseThrow(() -> new RuntimeException("Room not found"));
+            return toRoomSummaryResponse(room);
+        } catch (RuntimeException e) {
+            // Lỗi không tìm thấy phòng
+            return null;
+        } catch (Exception e) {
+            // Lỗi hệ thống khác
+            return null;
+        }
     }
-    
+
     /**
-     * Lấy thống kê phòng cho landlord
+     * Lấy danh sách ảnh của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về danh sách ảnh rỗng.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
      */
-    public RoomAnalyticsResponse getRoomAnalytics(Room room) {
-        long bookmarkCount = bookmarkRepository.findByRoom(room).size();
-        
-        return RoomAnalyticsResponse.builder()
-                .totalViews(room.getViewCount())
-                .viewsThisWeek(0) //Implement weekly view tracking
-                .viewsThisMonth(0) //Implement monthly view tracking
-                .bookmarkCount((int) bookmarkCount)
-                .lastViewedAt(LocalDateTime.now()) //Track last viewed time
-                .isBoosted(room.getBoostExpiresAt() != null && 
-                          room.getBoostExpiresAt().isAfter(LocalDateTime.now()))
-                .boostExpiresAt(room.getBoostExpiresAt())
-                .build();
+    public RoomImagesResponse getRoomImages(Long roomId) {
+        try {
+            Optional<Room> roomOpt = roomRepository.findAll().stream()
+                    .filter(r -> r.getId().getMostSignificantBits() == roomId)
+                    .findFirst();
+            UUID roomUuid = roomOpt.orElseThrow(() -> new RuntimeException("Room not found")).getId();
+            List<RoomImage> images = roomImageRepository.findByRoomId(roomUuid);
+            List<RoomImageResponse> imageResponses = images.stream()
+                    .map(img -> new RoomImageResponse(
+                            img.getId() != null ? img.getId().getMostSignificantBits() : null,
+                            img.getImageUrl(),
+                            img.isPrimary()
+                    ))
+                    .collect(Collectors.toList());
+            return new RoomImagesResponse(imageResponses);
+        } catch (RuntimeException e) {
+            // Lỗi không tìm thấy phòng
+            return new RoomImagesResponse(List.of());
+        } catch (Exception e) {
+            // Lỗi hệ thống khác
+            return new RoomImagesResponse(List.of());
+        }
     }
-    
-    /**
-     * Lấy tóm tắt đánh giá phòng
-     */
-    private ReviewSummaryResponse getReviewSummary(Room room) {
-        Double averageScore = reviewRepository.getAverageScoreByRoom(room);
-        long totalReviews = reviewRepository.countByRoom(room);
-        
-        // Implement star count breakdown
-        return ReviewSummaryResponse.builder()
-                .averageScore(averageScore != null ? averageScore : 0.0)
-                .totalReviews(totalReviews)
-                .fiveStarCount(0L)
-                .fourStarCount(0L)
-                .threeStarCount(0L)
-                .twoStarCount(0L)
-                .oneStarCount(0L)
-                .build();
+
+    // ================== Mapping methods ==================
+
+    private RoomListItemResponse toRoomListItemResponse(Room room) {
+        return new RoomListItemResponse(
+                room.getId() != null ? room.getId().getMostSignificantBits() : null,  // UUID -> Long
+                room.getTitle(),
+                room.getStreetAddress(),
+                room.getRoomType(),
+                room.getAreaSqm() != null ? room.getAreaSqm().doubleValue() : null,
+                room.getPricePerMonth() != null ? room.getPricePerMonth().intValue() : null,
+                getThumbnailUrl(room)
+        );
     }
-    
-    /**
-     * Kiểm tra user có quyền xem analytics không
-     */
-    private boolean isUserAuthorizedForAnalytics(Room room, String username) {
-        // Implement proper authorization check
-        return room.getOwner().getUsername().equals(username) ||
-               hasAdminRole();
+
+    private RoomSummaryResponse toRoomSummaryResponse(Room room) {
+        return new RoomSummaryResponse(
+                room.getId() != null ? room.getId().getMostSignificantBits() : null,
+                room.getTitle(),
+                room.getStreetAddress(),
+                room.getRoomType(),
+                room.getAreaSqm() != null ? room.getAreaSqm().doubleValue() : null,
+                room.getPricePerMonth() != null ? room.getPricePerMonth().intValue() : null,
+                room.getDescription(),
+                room.getOwner() != null ? room.getOwner().getProfile().getFullName() : null,
+                room.getOwner() != null ? room.getOwner().getProfile().getPhoneNumber() : null,
+                getThumbnailUrl(room)
+        );
     }
-    
-    /**
-     * Kiểm tra user có role admin không
-     */
-    private boolean hasAdminRole() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+
+    private String getThumbnailUrl(Room room) {
+        Optional<RoomImage> thumbnail = roomImageRepository.findByRoomIdAndPrimaryTrue(room.getId());
+        return thumbnail.map(RoomImage::getImageUrl).orElse(null);
     }
 }
