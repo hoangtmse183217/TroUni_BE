@@ -47,4 +47,25 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
     long countByOwnerAndStatus(@Param("owner") User owner, @Param("status") String status);
     
     List<Room> findTop10ByOrderByViewCountDesc();
+
+    @Query("SELECT r FROM Room r WHERE " +
+            "(:status IS NULL OR r.status = :status) AND " +
+            "(:city IS NULL OR r.city = :city) AND " +
+            "(:district IS NULL OR r.district = :district) AND " +
+            "(:ward IS NULL OR r.ward = :ward) AND " +
+            "(:minPrice IS NULL OR r.pricePerMonth >= :minPrice) AND " +
+            "(:maxPrice IS NULL OR r.pricePerMonth <= :maxPrice) AND " +
+            "(:minArea IS NULL OR r.areaSqm >= :minArea) AND " +
+            "(:maxArea IS NULL OR r.areaSqm <= :maxArea) AND " +
+            "(:roomType IS NULL OR r.roomType = :roomType)")
+    List<Room> searchAndFilter(
+            @Param("status") String status,
+            @Param("city") String city,
+            @Param("district") String district,
+            @Param("ward") String ward,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("minArea") BigDecimal minArea,
+            @Param("maxArea") BigDecimal maxArea,
+            @Param("roomType") RoomType roomType);
 }

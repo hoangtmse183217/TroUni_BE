@@ -153,9 +153,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Các endpoint public - không cần authentication
                         .requestMatchers(
-                                "/auth/**",           // Auth endpoints (login, signup, logout)
-                                "/public/**",         // Public endpoints
-                                "/email-verification/**"  // Email verification endpoints
+                                "/auth/**",
+                                "/public/**",
+                                "/email-verification/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
 
                         // Tất cả các endpoint khác cần authentication
