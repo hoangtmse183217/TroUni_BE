@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class MasterAmenity {
     
     @Id
@@ -33,5 +35,5 @@ public class MasterAmenity {
     
     // Many-to-many relationship with Room
     @ManyToMany(mappedBy = "amenities")
-    private List<Room> rooms;
+    private List<Room> rooms = new ArrayList<>();
 }

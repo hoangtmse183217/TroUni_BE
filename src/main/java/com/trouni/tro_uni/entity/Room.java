@@ -8,6 +8,7 @@ import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Room {
     
     @Id
@@ -87,7 +89,7 @@ public class Room {
     // Relationships
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore // Tránh circular reference khi serialize JSON
-    private List<RoomImage> images;
+    private List<RoomImage> images = new ArrayList<>();
     
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore // Tránh circular reference khi serialize JSON

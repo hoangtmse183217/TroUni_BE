@@ -1,8 +1,6 @@
 package com.trouni.tro_uni.exception;
 
-import com.trouni.tro_uni.exception.errorcode.TokenErrorCode;
-import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
-import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
+import com.trouni.tro_uni.exception.errorcode.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.http.HttpStatus;
@@ -15,6 +13,9 @@ public class AppException extends RuntimeException {
     private TokenErrorCode tokenErrorCode;
     private AuthenticationErrorCode authErrorCode;
     private GeneralErrorCode generalErrorCode;
+    private RoomErrorCode roomErrorCode;
+    private ReviewErrorCode reviewErrorCode;
+    private MasterAmenityErrorCode masterAmenityErrorCode;
 
     public AppException(TokenErrorCode tokenErrorCode) {
         super(tokenErrorCode.getMessage());
@@ -29,6 +30,21 @@ public class AppException extends RuntimeException {
     public AppException(GeneralErrorCode generalErrorCode) {
         super(generalErrorCode.getMessage());
         this.generalErrorCode = generalErrorCode;
+    }
+
+    public AppException(RoomErrorCode roomErrorCode) {
+        super(roomErrorCode.getMessage());
+        this.roomErrorCode = roomErrorCode;
+    }
+
+    public AppException(MasterAmenityErrorCode masterAmenityErrorCode) {
+        super(masterAmenityErrorCode.getMessage());
+        this.masterAmenityErrorCode = masterAmenityErrorCode;
+    }
+
+    public AppException(ReviewErrorCode reviewErrorCode) {
+        super(reviewErrorCode.getMessage());
+        this.reviewErrorCode = reviewErrorCode;
     }
 
     public AppException(TokenErrorCode tokenErrorCode, String customMessage) {
@@ -57,6 +73,15 @@ public class AppException extends RuntimeException {
         if (generalErrorCode != null) {
             return generalErrorCode.getCode();
         }
+        if (roomErrorCode != null) {
+            return roomErrorCode.getCode();
+        }
+        if (masterAmenityErrorCode != null) {
+            return masterAmenityErrorCode.getCode();
+        }
+        if (reviewErrorCode != null) {
+            return reviewErrorCode.getCode();
+        }
         return "UNKNOWN_ERROR";
     }
 
@@ -77,6 +102,15 @@ public class AppException extends RuntimeException {
             return customMessage != null && !customMessage.equals(generalErrorCode.getMessage()) ? 
                    customMessage : generalErrorCode.getMessage();
         }
+        if (roomErrorCode != null) {
+            return roomErrorCode.getMessage();
+        }
+        if (masterAmenityErrorCode != null) {
+            return masterAmenityErrorCode.getMessage();
+        }
+        if (reviewErrorCode != null) {
+            return reviewErrorCode.getMessage();
+        }
         return customMessage != null ? customMessage : "Unknown error occurred";
     }
 
@@ -90,6 +124,15 @@ public class AppException extends RuntimeException {
         }
         if (generalErrorCode != null) {
             return generalErrorCode.getStatusCode();
+        }
+        if (roomErrorCode != null) {
+            return roomErrorCode.getStatusCode();
+        }
+        if (masterAmenityErrorCode != null) {
+            return masterAmenityErrorCode.getStatusCode();
+        }
+        if (reviewErrorCode != null) {
+            return reviewErrorCode.getStatusCode();
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }

@@ -96,7 +96,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Cho phép origin từ frontend
-        configuration.setAllowedOrigins(List.of("https://app.swaggerhub.com"));
+        configuration.setAllowedOrigins(List.of("https://app.swaggerhub.com","http://localhost:5173"));
 
         // Cho phép tất cả các HTTP methods
         configuration.addAllowedMethod("*");
@@ -153,12 +153,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Các endpoint public - không cần authentication
                         .requestMatchers(
-                                "/auth/**",
-                                "/public/**",
-                                "/email-verification/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/auth/**",           // Auth endpoints (login, signup, logout)
+                                "/public/**",         // Public endpoints
+                                "/email-verification/**",  // Email verification endpoints
+                                "/v3/api-docs/**",    // Swagger API docs
+                                "/swagger-ui/**",     // Swagger UI
+                                "/swagger-ui.html",   // Swagger UI HTML
+                                "/api/rooms/**",      // Room endpoints (original search APIs)
+                                "/room-images/**",    // Room-image endpoints
+                                "/reviews/**",        // Review endpoints
+                                "/master-amenities/**" // Master-amenity endpoints
                         ).permitAll()
 
                         // Tất cả các endpoint khác cần authentication

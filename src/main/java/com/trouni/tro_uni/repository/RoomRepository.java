@@ -16,10 +16,8 @@ import java.util.UUID;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, UUID> {
-    
-    List<Room> findByOwner(User owner);
-    
-    List<Room> findByOwnerId(UUID ownerId);
+
+    // ================== ORIGINAL SEARCH METHODS (from main branch) ==================
     
     Page<Room> findByStatus(String status, Pageable pageable);
     
@@ -68,4 +66,12 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
             @Param("minArea") BigDecimal minArea,
             @Param("maxArea") BigDecimal maxArea,
             @Param("roomType") RoomType roomType);
+
+    // ================== NEW METHODS (from nguyenvuong-dev branch) ==================
+    
+    Page<Room> findByOwnerId(UUID ownerId, Pageable pageable);
+    
+    List<Room> findByOwner(User owner);
+    
+    List<Room> findByOwnerId(UUID ownerId);
 }
