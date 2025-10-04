@@ -24,6 +24,10 @@ public class MasterAmenity {
     @Column(nullable = false, unique = true, length = 100)
     private String name; // e.g., Wi-Fi, Air Conditioner, Parking
     
+    @Nationalized
+    @Column(name = "description")
+    private String description;
+    
     @Column(name = "icon_url")
     private String iconUrl;
     

@@ -1,0 +1,1897 @@
+{
+	"info": {
+		"_postman_id": "trouni-complete-api-collection",
+		"name": "TroUni Complete API Collection",
+		"description": "Complete API collection for TroUni with ALL endpoints - Each request can run independently\n\nIncludes ALL controllers: Auth, User, Profile, Email Verification, Room, Bookmark, Roommate Posts, Reports",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.token) {",
+									"    pm.environment.set('token', pm.response.json().data.token);",
+									"    console.log('✅ JWT token saved: ' + pm.response.json().data.token.substring(0, 50) + '...');",
+									"}",
+									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.user) {",
+									"    pm.environment.set('userId', pm.response.json().data.user.id);",
+									"    pm.environment.set('username', pm.response.json().data.user.username);",
+									"    console.log('✅ User info saved: ' + pm.response.json().data.user.username);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"usernameOrEmail\": \"testuser\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/signup",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "signup"]
+						}
+					}
+				},
+				{
+					"name": "Get Current User",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "logout"]
+						}
+					}
+				},
+				{
+					"name": "Google Login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"accessToken\": \"GOOGLE_ACCESS_TOKEN_HERE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/google-login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "google-login"]
+						}
+					}
+				},
+				{
+					"name": "Forgot Password",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/forgot-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "forgot-password"]
+						}
+					}
+				},
+				{
+					"name": "Reset Password",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"resetToken\": \"RESET_TOKEN_FROM_EMAIL\",\n  \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "reset-password"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/user/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "users"]
+						}
+					}
+				},
+				{
+					"name": "Get User by Username",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}",
+									"if (!pm.environment.get('username')) {",
+									"    pm.environment.set('username', 'testuser');",
+									"    console.log('ℹ️ Using default username=testuser');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/user/{{username}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "{{username}}"]
+						}
+					}
+				},
+				{
+					"name": "Check Token Status",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please set a valid JWT token to check');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/check-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "check-token"]
+						}
+					}
+				},
+				{
+					"name": "Get Blacklist Stats",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/blacklist-stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "blacklist-stats"]
+						}
+					}
+				},
+				{
+					"name": "Update Current User",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"updatedusername\",\n  \"email\": \"updated@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "me"]
+						}
+					}
+				},
+				{
+					"name": "Admin Update User (Admin/Manager Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Admin/Manager role');",
+									"}",
+									"if (!pm.environment.get('userId')) {",
+									"    pm.environment.set('userId', '1');",
+									"    console.log('ℹ️ Using default userId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"adminupdated\",\n  \"email\": \"adminupdated@example.com\",\n  \"role\": \"LANDLORD\",\n  \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "{{userId}}"]
+						}
+					}
+				},
+				{
+					"name": "Soft Delete User (Admin/Manager Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Admin/Manager role');",
+									"}",
+									"if (!pm.environment.get('userId')) {",
+									"    pm.environment.set('userId', '1');",
+									"    console.log('ℹ️ Using default userId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/user/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "{{userId}}"]
+						}
+					}
+				},
+				{
+					"name": "Hard Delete User (Admin Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Admin role (ONLY Admin can hard delete)');",
+									"}",
+									"if (!pm.environment.get('userId')) {",
+									"    pm.environment.set('userId', '1');",
+									"    console.log('ℹ️ Using default userId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/user/{{userId}}/hard-delete",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "{{userId}}", "hard-delete"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Profile Management",
+			"item": [
+				{
+					"name": "Get Current User Profile",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/profile/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["profile", "me"]
+						}
+					}
+				},
+				{
+					"name": "Update Current User Profile",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"John Updated Doe\",\n  \"gender\": \"male\",\n  \"phoneNumber\": \"0987654321\",\n  \"avatarUrl\": \"https://example.com/new-avatar.jpg\",\n  \"badge\": \"Updated Badge\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/profile/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["profile", "me"]
+						}
+					}
+				},
+				{
+					"name": "Get Profile by User ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}",
+									"if (!pm.environment.get('userId')) {",
+									"    pm.environment.set('userId', '1');",
+									"    console.log('ℹ️ Using default userId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/profile/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["profile", "{{userId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Email Verification",
+			"item": [
+				{
+					"name": "Verify Email",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"verificationCode\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/email-verification/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["email-verification", "verify"]
+						}
+					}
+				},
+				{
+					"name": "Resend Verification Code",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/email-verification/resend",
+							"host": ["{{baseUrl}}"],
+							"path": ["email-verification", "resend"]
+						}
+					}
+				},
+				{
+					"name": "Get Verification Info",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/email-verification/info?email=user@example.com",
+							"host": ["{{baseUrl}}"],
+							"path": ["email-verification", "info"],
+							"query": [
+								{
+									"key": "email",
+									"value": "user@example.com"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Room Management",
+			"item": [
+				{
+					"name": "Get Available Rooms",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.content) {",
+									"    const rooms = pm.response.json().data.content;",
+									"    if (rooms.length > 0 && rooms[0].id) {",
+									"        pm.environment.set('roomId', rooms[0].id);",
+									"        console.log('✅ Room ID saved: ' + rooms[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/rooms?page=0&size=10&sortBy=createdAt&sortDir=desc",
+							"host": ["{{baseUrl}}"],
+							"path": ["rooms"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt"
+								},
+								{
+									"key": "sortDir",
+									"value": "desc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Rooms",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/rooms/search?city=Ho Chi Minh City&district=District 1&minPrice=1000000&maxPrice=10000000&page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["rooms", "search"],
+							"query": [
+								{
+									"key": "city",
+									"value": "Ho Chi Minh City"
+								},
+								{
+									"key": "district",
+									"value": "District 1"
+								},
+								{
+									"key": "minPrice",
+									"value": "1000000"
+								},
+								{
+									"key": "maxPrice",
+									"value": "10000000"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Room Details",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first or set a valid JWT token');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/rooms/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["rooms", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Room Analytics (Landlord/Admin Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Landlord/Admin role (Managers cannot access analytics)');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/rooms/{{roomId}}/analytics",
+							"host": ["{{baseUrl}}"],
+							"path": ["rooms", "{{roomId}}", "analytics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Bookmark Management",
+			"item": [
+				{
+					"name": "Bookmark Room",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"roomId\": \"{{roomId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bookmarks",
+							"host": ["{{baseUrl}}"],
+							"path": ["bookmarks"]
+						}
+					}
+				},
+				{
+					"name": "Remove Bookmark",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookmarks/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["bookmarks", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Toggle Bookmark",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookmarks/{{roomId}}/toggle",
+							"host": ["{{baseUrl}}"],
+							"path": ["bookmarks", "{{roomId}}", "toggle"]
+						}
+					}
+				},
+				{
+					"name": "Get User Bookmarks",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookmarks?page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["bookmarks"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All User Bookmarks",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookmarks/all",
+							"host": ["{{baseUrl}}"],
+							"path": ["bookmarks", "all"]
+						}
+					}
+				},
+				{
+					"name": "Check Bookmark Status",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookmarks/{{roomId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["bookmarks", "{{roomId}}", "status"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Roommate Posts",
+			"item": [
+				{
+					"name": "Create Roommate Post",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.id) {",
+									"    pm.environment.set('postId', pm.response.json().data.id);",
+									"    console.log('✅ Post ID saved: ' + pm.response.json().data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Looking for roommate near HCMUS\",\n  \"description\": \"Student looking for clean, quiet roommate to share apartment\",\n  \"desiredLocationText\": \"Near University of Science, District 5\",\n  \"budgetMin\": 2000000,\n  \"budgetMax\": 4000000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts"]
+						}
+					}
+				},
+				{
+					"name": "Get Roommate Posts",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.content) {",
+									"    const posts = pm.response.json().data.content;",
+									"    if (posts.length > 0 && posts[0].id) {",
+									"        pm.environment.set('postId', posts[0].id);",
+									"        console.log('✅ Post ID saved: ' + posts[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts?status=open&page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts"],
+							"query": [
+								{
+									"key": "status",
+									"value": "open"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Roommate Post Details",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('postId')) {",
+									"    pm.environment.set('postId', '1');",
+									"    console.log('ℹ️ Using default postId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts/{{postId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts", "{{postId}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Roommate Post",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.environment.get('postId')) {",
+									"    pm.environment.set('postId', '1');",
+									"    console.log('ℹ️ Using default postId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated: Looking for roommate near HCMUS\",\n  \"description\": \"Updated description - Still looking for clean roommate\",\n  \"budgetMax\": 5000000,\n  \"status\": \"open\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts/{{postId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts", "{{postId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Roommate Post",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first (Student/Admin/Manager can delete)');",
+									"}",
+									"if (!pm.environment.get('postId')) {",
+									"    pm.environment.set('postId', '1');",
+									"    console.log('ℹ️ Using default postId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts/{{postId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts", "{{postId}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Current User's Posts",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts/my-posts",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts", "my-posts"]
+						}
+					}
+				},
+				{
+					"name": "Search Posts by Budget",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts/search/budget?minBudget=2000000&maxBudget=5000000&page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts", "search", "budget"],
+							"query": [
+								{
+									"key": "minBudget",
+									"value": "2000000"
+								},
+								{
+									"key": "maxBudget",
+									"value": "5000000"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Posts by Location",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/roommate-posts/search/location?location=University&page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["roommate-posts", "search", "location"],
+							"query": [
+								{
+									"key": "location",
+									"value": "University"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Report Management",
+			"item": [
+				{
+					"name": "Create Report",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1 for report');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.id) {",
+									"    pm.environment.set('reportId', pm.response.json().data.id);",
+									"    console.log('✅ Report ID saved: ' + pm.response.json().data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reportedContentType\": \"room\",\n  \"reportedContentId\": \"{{roomId}}\",\n  \"reason\": \"This room listing contains inappropriate content\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reports",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports"]
+						}
+					}
+				},
+				{
+					"name": "Get User Reports",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/my-reports",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "my-reports"]
+						}
+					}
+				},
+				{
+					"name": "Get All Reports (Manager/Admin Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Manager/Admin role');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports?status=pending&page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Report Status (Manager/Admin Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Manager/Admin role');",
+									"}",
+									"if (!pm.environment.get('reportId')) {",
+									"    pm.environment.set('reportId', '1');",
+									"    console.log('ℹ️ Using default reportId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"resolved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reports/{{reportId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "{{reportId}}", "status"]
+						}
+					}
+				},
+				{
+					"name": "Get Report Statistics (Manager/Admin Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Manager/Admin role');",
+									"}",
+									"if (!pm.environment.get('roomId')) {",
+									"    pm.environment.set('roomId', '1');",
+									"    console.log('ℹ️ Using default roomId=1');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/stats/room/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "stats", "room", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Report Categories",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reports/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "categories"]
+						}
+					}
+				},
+				{
+					"name": "Get Report Statuses (Manager/Admin Only)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('baseUrl')) {",
+									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.environment.get('token')) {",
+									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login with Manager/Admin role');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/statuses",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "statuses"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "YOUR_JWT_TOKEN_HERE",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "roomId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "postId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "reportId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "testuser",
+			"type": "string"
+		}
+	]
+}

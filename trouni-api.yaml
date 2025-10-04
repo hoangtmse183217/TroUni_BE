@@ -25,10 +25,13 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://trouni-858113801719.asia-southeast1.run.app
-    description: Production Server
+  - description: Production Server
+    url: https://trouni-228432317225.asia-east1.run.app
   - url: http://localhost:8080
     description: Local Development Server
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/nymari/TroUni/1.0.0
 
 security:
   - BearerAuth: []
@@ -350,8 +353,8 @@ paths:
     put:
       tags:
         - User Management
-      summary: Admin Update User
-      description: Admin/Manager update user information
+      summary: Admin/Manager Update User
+      description: Admin or Manager update user information
       parameters:
         - name: userId
           in: path
@@ -389,7 +392,7 @@ paths:
       tags:
         - User Management
       summary: Delete User (Soft Delete)
-      description: Soft delete user account (admin/manager only) - Sets status to DELETED
+      description: Soft delete user account (admin or manager only) - Sets status to DELETED
       parameters:
         - name: userId
           in: path
@@ -686,6 +689,908 @@ paths:
         '404':
           description: Verification info not found
 
+  # Room Management Endpoints
+  /rooms:
+    get:
+      tags:
+        - Room Management
+      summary: Get Available Rooms
+      description: Get list of available rooms with pagination and sorting
+      security: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Page size
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "createdAt"
+          description: Sort field
+        - name: sortDir
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: "desc"
+          description: Sort direction
+      responses:
+        '200':
+          description: Available rooms retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Available rooms retrieved successfully"
+                data:
+                  content:
+                    - id: "123e4567-e89b-12d3-a456-426614174000"
+                      title: "Cozy Studio Apartment"
+                      description: "Beautiful studio near university"
+                      roomType: "PHONG_TRO"
+                      city: "Ho Chi Minh City"
+                      district: "District 1"
+                      pricePerMonth: 5000000
+                      areaSqm: 25.5
+                      status: "available"
+                      viewCount: 150
+                      landlord:
+                        id: "456e7890-e89b-12d3-a456-426614174001"
+                        username: "landlord1"
+                        email: "landlord@example.com"
+                        fullName: "John Landlord"
+                        phoneNumber: "0123456789"
+                      images:
+                        - id: "789e0123-e89b-12d3-a456-426614174002"
+                          imageUrl: "https://example.com/room1.jpg"
+                          isPrimary: true
+                      amenities:
+                        - id: "012e3456-e89b-12d3-a456-426614174003"
+                          name: "Wi-Fi"
+                          description: "High-speed internet"
+                          iconUrl: "https://example.com/wifi-icon.png"
+                  totalElements: 50
+                  totalPages: 5
+                  size: 10
+                  number: 0
+
+  /rooms/search:
+    get:
+      tags:
+        - Room Management
+      summary: Search Rooms
+      description: Search rooms by multiple criteria
+      security: []
+      parameters:
+        - name: city
+          in: query
+          required: false
+          schema:
+            type: string
+          description: City name
+        - name: district
+          in: query
+          required: false
+          schema:
+            type: string
+          description: District name
+        - name: minPrice
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Minimum price
+        - name: maxPrice
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Maximum price
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Room search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /rooms/{roomId}:
+    get:
+      tags:
+        - Room Management
+      summary: Get Room Details
+      description: Get detailed information about a specific room (requires authentication)
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Room details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Room details retrieved successfully"
+                data:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  title: "Cozy Studio Apartment"
+                  description: "Beautiful studio near university with modern amenities"
+                  roomType: "PHONG_TRO"
+                  streetAddress: "123 Nguyen Hue Street"
+                  city: "Ho Chi Minh City"
+                  district: "District 1"
+                  ward: "Ben Nghe Ward"
+                  latitude: 10.7769
+                  longitude: 106.7009
+                  pricePerMonth: 5000000
+                  areaSqm: 25.5
+                  status: "available"
+                  viewCount: 151
+                  createdAt: "2024-01-01T00:00:00"
+                  updatedAt: "2024-01-01T00:00:00"
+                  landlord:
+                    id: "456e7890-e89b-12d3-a456-426614174001"
+                    username: "landlord1"
+                    email: "landlord@example.com"
+                    fullName: "John Landlord"
+                    phoneNumber: "0123456789"
+                    avatarUrl: "https://example.com/landlord-avatar.jpg"
+                  images:
+                    - id: "789e0123-e89b-12d3-a456-426614174002"
+                      imageUrl: "https://example.com/room1.jpg"
+                      description: "Main room view"
+                      isPrimary: true
+                      createdAt: "2024-01-01T00:00:00"
+                  amenities:
+                    - id: "012e3456-e89b-12d3-a456-426614174003"
+                      name: "Wi-Fi"
+                      description: "High-speed internet connection"
+                      iconUrl: "https://example.com/wifi-icon.png"
+                  reviewSummary:
+                    averageScore: 4.5
+                    totalReviews: 10
+                    fiveStarCount: 6
+                    fourStarCount: 3
+                    threeStarCount: 1
+                    twoStarCount: 0
+                    oneStarCount: 0
+        '404':
+          description: Room not found
+
+  /rooms/{roomId}/analytics:
+    get:
+      tags:
+        - Room Management
+      summary: Get Room Analytics
+      description: Get analytics data for a room (landlord or admin only - managers cannot access analytics)
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Room analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Room analytics retrieved successfully"
+                data:
+                  totalViews: 151
+                  viewsThisWeek: 25
+                  viewsThisMonth: 89
+                  bookmarkCount: 12
+                  lastViewedAt: "2024-01-01T10:30:00"
+                  isBoosted: true
+                  boostExpiresAt: "2024-01-07T00:00:00"
+
+  # Bookmark Management Endpoints
+  /bookmarks:
+    get:
+      tags:
+        - Bookmark Management
+      summary: Get User Bookmarks
+      description: Get paginated list of user's bookmarked rooms (all authenticated users)
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Bookmarks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Bookmarks retrieved successfully"
+                data:
+                  content:
+                    - userId: "123e4567-e89b-12d3-a456-426614174000"
+                      roomId: "456e7890-e89b-12d3-a456-426614174001"
+                      roomTitle: "Cozy Studio Apartment"
+                      roomCity: "Ho Chi Minh City"
+                      roomDistrict: "District 1"
+                      roomPrice: 5000000
+                      roomStatus: "available"
+                      primaryImageUrl: "https://example.com/room1.jpg"
+                      bookmarkedAt: "2024-01-01T10:00:00"
+                  totalElements: 5
+                  totalPages: 1
+                  size: 10
+                  number: 0
+
+    post:
+      tags:
+        - Bookmark Management
+      summary: Bookmark Room
+      description: Add a room to bookmarks (all authenticated users)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookmarkRequest'
+            example:
+              roomId: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Room bookmarked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Room bookmarked successfully"
+                data:
+                  userId: "123e4567-e89b-12d3-a456-426614174000"
+                  roomId: "456e7890-e89b-12d3-a456-426614174001"
+                  roomTitle: "Cozy Studio Apartment"
+                  roomCity: "Ho Chi Minh City"
+                  roomDistrict: "District 1"
+                  roomPrice: 5000000
+                  roomStatus: "available"
+                  primaryImageUrl: "https://example.com/room1.jpg"
+                  bookmarkedAt: "2024-01-01T10:00:00"
+
+  /bookmarks/all:
+    get:
+      tags:
+        - Bookmark Management
+      summary: Get All User Bookmarks
+      description: Get all user's bookmarks without pagination (all authenticated users)
+      responses:
+        '200':
+          description: All bookmarks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /bookmarks/{roomId}:
+    delete:
+      tags:
+        - Bookmark Management
+      summary: Remove Bookmark
+      description: Remove a room from bookmarks (all authenticated users)
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Room unbookmarked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Room unbookmarked successfully"
+                data: null
+
+  /bookmarks/{roomId}/toggle:
+    post:
+      tags:
+        - Bookmark Management
+      summary: Toggle Bookmark
+      description: Toggle bookmark status for a room (all authenticated users)
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Bookmark toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /bookmarks/{roomId}/status:
+    get:
+      tags:
+        - Bookmark Management
+      summary: Check Bookmark Status
+      description: Check if a room is bookmarked by current user (all authenticated users)
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Bookmark status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Bookmark status retrieved successfully"
+                data:
+                  isBookmarked: true
+                  roomId: "123e4567-e89b-12d3-a456-426614174000"
+
+  # Roommate Post Management Endpoints
+  /roommate-posts:
+    get:
+      tags:
+        - Roommate Posts
+      summary: Get Roommate Posts
+      description: Get paginated list of roommate seeking posts
+      security: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [open, closed]
+          description: Filter by post status
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Roommate posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Roommate posts retrieved successfully"
+                data:
+                  content:
+                    - id: "123e4567-e89b-12d3-a456-426614174000"
+                      title: "Looking for roommate near HCMUS"
+                      description: "Student looking for clean, quiet roommate"
+                      desiredLocationText: "Near University of Science"
+                      budgetMin: 2000000
+                      budgetMax: 4000000
+                      status: "open"
+                      createdAt: "2024-01-01T00:00:00"
+                      updatedAt: "2024-01-01T00:00:00"
+                      author:
+                        id: "456e7890-e89b-12d3-a456-426614174001"
+                        username: "student1"
+                        fullName: "Jane Student"
+                        avatarUrl: "https://example.com/avatar.jpg"
+                  totalElements: 25
+                  totalPages: 3
+                  size: 10
+                  number: 0
+
+    post:
+      tags:
+        - Roommate Posts
+      summary: Create Roommate Post
+      description: Create a new roommate seeking post (student only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoommatePostRequest'
+            example:
+              title: "Looking for roommate near HCMUS"
+              description: "Student looking for clean, quiet roommate to share apartment"
+              desiredLocationText: "Near University of Science, District 5"
+              budgetMin: 2000000
+              budgetMax: 4000000
+      responses:
+        '200':
+          description: Roommate post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Roommate post created successfully"
+                data:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  title: "Looking for roommate near HCMUS"
+                  description: "Student looking for clean, quiet roommate to share apartment"
+                  desiredLocationText: "Near University of Science, District 5"
+                  budgetMin: 2000000
+                  budgetMax: 4000000
+                  status: "open"
+                  createdAt: "2024-01-01T10:00:00"
+                  updatedAt: "2024-01-01T10:00:00"
+                  author:
+                    id: "456e7890-e89b-12d3-a456-426614174001"
+                    username: "student1"
+                    fullName: "Jane Student"
+                    avatarUrl: "https://example.com/avatar.jpg"
+
+  /roommate-posts/{postId}:
+    get:
+      tags:
+        - Roommate Posts
+      summary: Get Roommate Post Details
+      description: Get detailed information about a roommate post
+      security: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Roommate post retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      tags:
+        - Roommate Posts
+      summary: Update Roommate Post
+      description: Update a roommate post (author only)
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoommatePostRequest'
+            example:
+              title: "Updated: Looking for roommate near HCMUS"
+              description: "Updated description"
+              budgetMax: 5000000
+              status: "open"
+      responses:
+        '200':
+          description: Roommate post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      tags:
+        - Roommate Posts
+      summary: Delete Roommate Post
+      description: Delete a roommate post (author, admin, or manager)
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Roommate post deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Roommate post deleted successfully"
+                data: null
+
+  /roommate-posts/my-posts:
+    get:
+      tags:
+        - Roommate Posts
+      summary: Get Current User's Posts
+      description: Get all roommate posts created by current user (student only)
+      responses:
+        '200':
+          description: User posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /roommate-posts/search/budget:
+    get:
+      tags:
+        - Roommate Posts
+      summary: Search Posts by Budget
+      description: Search roommate posts by budget range
+      security: []
+      parameters:
+        - name: minBudget
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: maxBudget
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Budget search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /roommate-posts/search/location:
+    get:
+      tags:
+        - Roommate Posts
+      summary: Search Posts by Location
+      description: Search roommate posts by desired location
+      security: []
+      parameters:
+        - name: location
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Location search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Report Management Endpoints
+  /reports:
+    get:
+      tags:
+        - Report Management
+      summary: Get All Reports
+      description: Get paginated list of all reports (manager/admin only)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, reviewed, resolved, dismissed]
+          description: Filter by report status
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Reports retrieved successfully"
+                data:
+                  content:
+                    - id: "123e4567-e89b-12d3-a456-426614174000"
+                      reportedContentType: "room"
+                      reportedContentId: "456e7890-e89b-12d3-a456-426614174001"
+                      reason: "Inappropriate content"
+                      status: "pending"
+                      createdAt: "2024-01-01T10:00:00"
+                      reporter:
+                        id: "789e0123-e89b-12d3-a456-426614174002"
+                        username: "reporter1"
+                      reportedContent:
+                        contentId: "456e7890-e89b-12d3-a456-426614174001"
+                        contentType: "room"
+                        title: "Reported Room Title"
+                        summary: "Room in Ho Chi Minh City, District 1"
+                        exists: true
+                  totalElements: 15
+                  totalPages: 2
+                  size: 10
+                  number: 0
+
+    post:
+      tags:
+        - Report Management
+      summary: Create Report
+      description: Report inappropriate content (student/landlord only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReportRequest'
+            example:
+              reportedContentType: "room"
+              reportedContentId: "123e4567-e89b-12d3-a456-426614174000"
+              reason: "This room listing contains inappropriate content"
+      responses:
+        '200':
+          description: Report created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Report created successfully"
+                data:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  reportedContentType: "room"
+                  reportedContentId: "456e7890-e89b-12d3-a456-426614174001"
+                  reason: "This room listing contains inappropriate content"
+                  status: "pending"
+                  createdAt: "2024-01-01T10:00:00"
+                  reporter:
+                    id: "789e0123-e89b-12d3-a456-426614174002"
+                    username: "reporter1"
+                  reportedContent:
+                    contentId: "456e7890-e89b-12d3-a456-426614174001"
+                    contentType: "room"
+                    title: "Reported Room Title"
+                    summary: "Room in Ho Chi Minh City, District 1"
+                    exists: true
+
+  /reports/my-reports:
+    get:
+      tags:
+        - Report Management
+      summary: Get Current User's Reports
+      description: Get all reports created by current user
+      responses:
+        '200':
+          description: User reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /reports/{reportId}/status:
+    put:
+      tags:
+        - Report Management
+      summary: Update Report Status
+      description: Update the status of a report (manager/admin only)
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, reviewed, resolved, dismissed]
+              required:
+                - status
+            example:
+              status: "resolved"
+      responses:
+        '200':
+          description: Report status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /reports/stats/{contentType}/{contentId}:
+    get:
+      tags:
+        - Report Management
+      summary: Get Report Statistics
+      description: Get report count for specific content (manager/admin only)
+      parameters:
+        - name: contentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [room, user, roommate_post, review]
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Report statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Report statistics retrieved successfully"
+                data:
+                  contentType: "room"
+                  contentId: "123e4567-e89b-12d3-a456-426614174000"
+                  reportCount: 3
+
+  /reports/categories:
+    get:
+      tags:
+        - Report Management
+      summary: Get Report Categories
+      description: Get list of valid report content types
+      security: []
+      responses:
+        '200':
+          description: Report categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Report categories retrieved successfully"
+                data:
+                  - type: "room"
+                    description: "Room listing"
+                  - type: "user"
+                    description: "User account"
+                  - type: "roommate_post"
+                    description: "Roommate seeking post"
+                  - type: "review"
+                    description: "Room review"
+
+  /reports/statuses:
+    get:
+      tags:
+        - Report Management
+      summary: Get Report Statuses
+      description: Get list of valid report statuses (manager/admin only)
+      responses:
+        '200':
+          description: Report statuses retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "Report statuses retrieved successfully"
+                data:
+                  - status: "pending"
+                    description: "Waiting for review"
+                  - status: "reviewed"
+                    description: "Under investigation"
+                  - status: "resolved"
+                    description: "Issue resolved"
+                  - status: "dismissed"
+                    description: "Report dismissed"
+
   # Debug/Testing Endpoints
   /user/check-token:
     post:
@@ -883,7 +1788,7 @@ components:
           example: "updated@example.com"
         role:
           type: string
-          enum: [STUDENT, LANDLORD, ADMIN]
+          enum: [STUDENT, LANDLORD, MANAGER, ADMIN]
           description: User role
           example: "LANDLORD"
         status:
@@ -968,7 +1873,7 @@ components:
           example: "test@example.com"
         role:
           type: string
-          enum: [STUDENT, LANDLORD, ADMIN]
+          enum: [STUDENT, LANDLORD, MANAGER, ADMIN]
           description: User role
           example: "STUDENT"
 
@@ -990,7 +1895,7 @@ components:
           example: "test@example.com"
         role:
           type: string
-          enum: [STUDENT, LANDLORD, ADMIN]
+          enum: [STUDENT, LANDLORD, MANAGER, ADMIN]
           description: User role
           example: "STUDENT"
         status:
@@ -1160,6 +2065,521 @@ components:
           description: Number of active blacklisted tokens
           example: 3
 
+    # Room Management Schemas
+    RoomDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Room ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          description: Room title
+          example: "Cozy Studio Apartment"
+        description:
+          type: string
+          description: Room description
+          example: "Beautiful studio near university with modern amenities"
+        roomType:
+          type: string
+          enum: [PHONG_TRO, CAN_HO, NHA_NGUYEN_CAN, HOMESTAY]
+          description: Type of room
+          example: "PHONG_TRO"
+        streetAddress:
+          type: string
+          description: Street address
+          example: "123 Nguyen Hue Street"
+        city:
+          type: string
+          description: City name
+          example: "Ho Chi Minh City"
+        district:
+          type: string
+          description: District name
+          example: "District 1"
+        ward:
+          type: string
+          description: Ward name
+          example: "Ben Nghe Ward"
+        latitude:
+          type: number
+          format: double
+          description: Latitude coordinate
+          example: 10.7769
+        longitude:
+          type: number
+          format: double
+          description: Longitude coordinate
+          example: 106.7009
+        pricePerMonth:
+          type: number
+          description: Monthly rent price
+          example: 5000000
+        areaSqm:
+          type: number
+          format: double
+          description: Area in square meters
+          example: 25.5
+        status:
+          type: string
+          description: Room status
+          example: "available"
+        viewCount:
+          type: integer
+          description: Number of views
+          example: 151
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-01T00:00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-01T00:00:00"
+        landlord:
+          $ref: '#/components/schemas/LandlordContactResponse'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomImageResponse'
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityResponse'
+        reviewSummary:
+          $ref: '#/components/schemas/ReviewSummaryResponse'
+        analytics:
+          $ref: '#/components/schemas/RoomAnalyticsResponse'
+
+    LandlordContactResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Landlord user ID
+          example: "456e7890-e89b-12d3-a456-426614174001"
+        username:
+          type: string
+          description: Username
+          example: "landlord1"
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "landlord@example.com"
+        fullName:
+          type: string
+          description: Full name
+          example: "John Landlord"
+        phoneNumber:
+          type: string
+          description: Phone number
+          example: "0123456789"
+        avatarUrl:
+          type: string
+          format: uri
+          description: Avatar image URL
+          example: "https://example.com/landlord-avatar.jpg"
+
+    RoomImageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Image ID
+          example: "789e0123-e89b-12d3-a456-426614174002"
+        imageUrl:
+          type: string
+          format: uri
+          description: Image URL
+          example: "https://example.com/room1.jpg"
+        description:
+          type: string
+          description: Image description
+          example: "Main room view"
+        isPrimary:
+          type: boolean
+          description: Whether this is the primary image
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-01T00:00:00"
+
+    AmenityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Amenity ID
+          example: "012e3456-e89b-12d3-a456-426614174003"
+        name:
+          type: string
+          description: Amenity name
+          example: "Wi-Fi"
+        description:
+          type: string
+          description: Amenity description
+          example: "High-speed internet connection"
+        iconUrl:
+          type: string
+          format: uri
+          description: Icon URL
+          example: "https://example.com/wifi-icon.png"
+
+    ReviewSummaryResponse:
+      type: object
+      properties:
+        averageScore:
+          type: number
+          format: double
+          description: Average review score
+          example: 4.5
+        totalReviews:
+          type: integer
+          description: Total number of reviews
+          example: 10
+        fiveStarCount:
+          type: integer
+          description: Number of 5-star reviews
+          example: 6
+        fourStarCount:
+          type: integer
+          description: Number of 4-star reviews
+          example: 3
+        threeStarCount:
+          type: integer
+          description: Number of 3-star reviews
+          example: 1
+        twoStarCount:
+          type: integer
+          description: Number of 2-star reviews
+          example: 0
+        oneStarCount:
+          type: integer
+          description: Number of 1-star reviews
+          example: 0
+
+    RoomAnalyticsResponse:
+      type: object
+      properties:
+        totalViews:
+          type: integer
+          description: Total view count
+          example: 151
+        viewsThisWeek:
+          type: integer
+          description: Views this week
+          example: 25
+        viewsThisMonth:
+          type: integer
+          description: Views this month
+          example: 89
+        bookmarkCount:
+          type: integer
+          description: Number of bookmarks
+          example: 12
+        lastViewedAt:
+          type: string
+          format: date-time
+          description: Last viewed timestamp
+          example: "2024-01-01T10:30:00"
+        isBoosted:
+          type: boolean
+          description: Whether room is boosted
+          example: true
+        boostExpiresAt:
+          type: string
+          format: date-time
+          description: Boost expiration timestamp
+          example: "2024-01-07T00:00:00"
+
+    # Bookmark Management Schemas
+    BookmarkRequest:
+      type: object
+      required:
+        - roomId
+      properties:
+        roomId:
+          type: string
+          format: uuid
+          description: Room ID to bookmark
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    BookmarkResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: User ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        roomId:
+          type: string
+          format: uuid
+          description: Room ID
+          example: "456e7890-e89b-12d3-a456-426614174001"
+        roomTitle:
+          type: string
+          description: Room title
+          example: "Cozy Studio Apartment"
+        roomCity:
+          type: string
+          description: Room city
+          example: "Ho Chi Minh City"
+        roomDistrict:
+          type: string
+          description: Room district
+          example: "District 1"
+        roomPrice:
+          type: number
+          description: Room price per month
+          example: 5000000
+        roomStatus:
+          type: string
+          description: Room status
+          example: "available"
+        primaryImageUrl:
+          type: string
+          format: uri
+          description: Primary image URL
+          example: "https://example.com/room1.jpg"
+        bookmarkedAt:
+          type: string
+          format: date-time
+          description: Bookmark creation timestamp
+          example: "2024-01-01T10:00:00"
+
+    # Roommate Post Schemas
+    CreateRoommatePostRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: Post title
+          example: "Looking for roommate near HCMUS"
+        description:
+          type: string
+          description: Post description
+          example: "Student looking for clean, quiet roommate to share apartment"
+        desiredLocationText:
+          type: string
+          description: Desired location description
+          example: "Near University of Science, District 5"
+        budgetMin:
+          type: number
+          description: Minimum budget
+          example: 2000000
+        budgetMax:
+          type: number
+          description: Maximum budget
+          example: 4000000
+
+    UpdateRoommatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Post title
+          example: "Updated: Looking for roommate near HCMUS"
+        description:
+          type: string
+          description: Post description
+          example: "Updated description"
+        desiredLocationText:
+          type: string
+          description: Desired location description
+          example: "Near University of Science, District 5"
+        budgetMin:
+          type: number
+          description: Minimum budget
+          example: 2000000
+        budgetMax:
+          type: number
+          description: Maximum budget
+          example: 5000000
+        status:
+          type: string
+          enum: [open, closed]
+          description: Post status
+          example: "open"
+
+    RoommatePostResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Post ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          description: Post title
+          example: "Looking for roommate near HCMUS"
+        description:
+          type: string
+          description: Post description
+          example: "Student looking for clean, quiet roommate"
+        desiredLocationText:
+          type: string
+          description: Desired location description
+          example: "Near University of Science"
+        budgetMin:
+          type: number
+          description: Minimum budget
+          example: 2000000
+        budgetMax:
+          type: number
+          description: Maximum budget
+          example: 4000000
+        status:
+          type: string
+          enum: [open, closed]
+          description: Post status
+          example: "open"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-01T00:00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-01T00:00:00"
+        author:
+          $ref: '#/components/schemas/AuthorResponse'
+
+    AuthorResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Author user ID
+          example: "456e7890-e89b-12d3-a456-426614174001"
+        username:
+          type: string
+          description: Username
+          example: "student1"
+        fullName:
+          type: string
+          description: Full name
+          example: "Jane Student"
+        avatarUrl:
+          type: string
+          format: uri
+          description: Avatar image URL
+          example: "https://example.com/avatar.jpg"
+
+    # Report Management Schemas
+    CreateReportRequest:
+      type: object
+      required:
+        - reportedContentType
+        - reportedContentId
+        - reason
+      properties:
+        reportedContentType:
+          type: string
+          enum: [room, user, roommate_post, review]
+          description: Type of content being reported
+          example: "room"
+        reportedContentId:
+          type: string
+          format: uuid
+          description: ID of the content being reported
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        reason:
+          type: string
+          description: Reason for reporting
+          example: "This room listing contains inappropriate content"
+
+    ReportResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Report ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        reportedContentType:
+          type: string
+          enum: [room, user, roommate_post, review]
+          description: Type of reported content
+          example: "room"
+        reportedContentId:
+          type: string
+          format: uuid
+          description: ID of reported content
+          example: "456e7890-e89b-12d3-a456-426614174001"
+        reason:
+          type: string
+          description: Report reason
+          example: "Inappropriate content"
+        status:
+          type: string
+          enum: [pending, reviewed, resolved, dismissed]
+          description: Report status
+          example: "pending"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-01T10:00:00"
+        reporter:
+          $ref: '#/components/schemas/ReporterResponse'
+        reportedContent:
+          $ref: '#/components/schemas/ReportedContentResponse'
+
+    ReporterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Reporter user ID
+          example: "789e0123-e89b-12d3-a456-426614174002"
+        username:
+          type: string
+          description: Reporter username
+          example: "reporter1"
+
+    ReportedContentResponse:
+      type: object
+      properties:
+        contentId:
+          type: string
+          format: uuid
+          description: Content ID
+          example: "456e7890-e89b-12d3-a456-426614174001"
+        contentType:
+          type: string
+          description: Content type
+          example: "room"
+        title:
+          type: string
+          description: Content title
+          example: "Reported Room Title"
+        summary:
+          type: string
+          description: Content summary
+          example: "Room in Ho Chi Minh City, District 1"
+        exists:
+          type: boolean
+          description: Whether content still exists
+          example: true
+
 tags:
   - name: Authentication
     description: User authentication and authorization endpoints
@@ -1169,5 +2589,13 @@ tags:
     description: User profile management endpoints
   - name: Email Verification
     description: Email verification endpoints
+  - name: Room Management
+    description: Room viewing, search, and analytics endpoints
+  - name: Bookmark Management
+    description: Room bookmark management endpoints (all authenticated users)
+  - name: Roommate Posts
+    description: Roommate seeking post management endpoints (student features)
+  - name: Report Management
+    description: Content reporting and moderation endpoints
   - name: Debug/Testing
     description: Debugging and testing endpoints

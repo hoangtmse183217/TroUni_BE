@@ -13,6 +13,7 @@ import com.trouni.tro_uni.service.AuthService;
 import com.trouni.tro_uni.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -160,6 +161,7 @@ public class UserController {
      * @return ResponseEntity - Response chứa user đã cập nhật
      */
     @PutMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<UserResponse>> adminUpdateUser(@PathVariable UUID userId, @Valid @RequestBody AdminUpdateUserRequest updateRequest) {
         try {
             User currentUser = authService.getCurrentUser();
@@ -184,6 +186,7 @@ public class UserController {
      * @return ResponseEntity - Response chứa user đã bị vô hiệu hóa
      */
     @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<UserResponse>> deleteUser(@PathVariable UUID userId) {
         try {
             User currentUser = authService.getCurrentUser();
@@ -208,6 +211,7 @@ public class UserController {
      * @return ResponseEntity - Response chứa thông tin user đã xóa và số lượng records bị ảnh hưởng
      */
     @DeleteMapping("/{userId}/hard-delete")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> hardDeleteUser(@PathVariable UUID userId) {
         try {
             User currentUser = authService.getCurrentUser();
