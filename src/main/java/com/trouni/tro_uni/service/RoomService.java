@@ -23,9 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -51,7 +49,6 @@ public class RoomService {
             throw new AppException(RoomErrorCode.NOT_LANDLORD);
         }
 
-        // Bước 1: Tạo Room và lưu trước để có ID
         Room room = Room.builder()
                 .owner(currentUser)
                 .title(request.getTitle())
@@ -65,40 +62,40 @@ public class RoomService {
                 .longitude(request.getLongitude())
                 .pricePerMonth(request.getPricePerMonth())
                 .areaSqm(request.getAreaSqm())
-                .status("available")
+                .status(request.getStatus())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        Room savedRoom = roomRepository.save(room); // ✅ Lưu trước để có ID
-
-        // Bước 2: Xử lý ảnh từ List<String> → RoomImage
-        List<RoomImage> savedImages = request.getImages().stream()
-                .map(url -> {
-                    RoomImage image = new RoomImage();
-                    image.setImageUrl(url);
-                    image.setPrimary(false);
-                    image.setRoom(savedRoom); // ✅ Room đã có ID
-                    return roomImageRepository.save(image);
-                })
+        // Create image
+        List<String> imageUrls = Optional.ofNullable(request.getImages()).orElse(Collections.emptyList());
+        List<RoomImage> images = imageUrls.stream()
+                .map(url -> RoomImage.builder()
+                        .imageUrl(url)
+                        .primary(false)
+                        .room(room)
+                        .build())
                 .collect(Collectors.toList());
-        savedRoom.setImages(savedImages);
+        room.setImages(images);
 
-        // Bước 3: Xử lý tiện ích từ AmenityRequest → MasterAmenity
-        List<MasterAmenity> savedAmenities = request.getAmenities().stream()
-                .map(dto -> {
-                    MasterAmenity amenity = new MasterAmenity();
-                    amenity.setName(dto.getName());
-                    amenity.setIconUrl(dto.getIcon());
-                    return masterAmenityRepository.save(amenity);
-                })
+        // Create Amenity
+        List<MasterAmenityRequest> amenityDtos = Optional.ofNullable(request.getAmenities()).orElse(Collections.emptyList());
+        List<MasterAmenity> amenities = amenityDtos.stream()
+                .map(dto -> masterAmenityRepository
+                        .findByName(dto.getName())
+                        .orElseGet(() -> {
+                            MasterAmenity newAmenity = new MasterAmenity();
+                            newAmenity.setName(dto.getName());
+                            newAmenity.setIconUrl(dto.getIcon());
+                            return masterAmenityRepository.save(newAmenity);
+                        })
+                )
                 .collect(Collectors.toList());
-        savedRoom.setAmenities(savedAmenities);
+        room.setAmenities(amenities);
 
-        // Bước 4: Lưu lại Room với ảnh và tiện ích
-        Room finalRoom = roomRepository.save(savedRoom);
-        log.info("Created new room with ID: {} by user: {}", finalRoom.getId(), currentUser.getUsername());
-        return RoomResponse.fromRoom(finalRoom);
+        Room savedRoom = roomRepository.save(room);
+        log.info("Created new room with ID: {} by user: {}", savedRoom.getId(), currentUser.getUsername());
+        return RoomResponse.fromRoom(savedRoom);
     }
 
 
