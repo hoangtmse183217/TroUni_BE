@@ -44,9 +44,9 @@
          Room room = roomRepository.findById(roomId)
                  .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
-         if (room.getOwner().getId().equals(currentUser.getId())) {
-             throw new AppException(ReviewErrorCode.CANNOT_REVIEW_OWN_ROOM);
-         }
+//         if (room.getOwner().getId().equals(currentUser.getId())) {
+//             throw new AppException(ReviewErrorCode.CANNOT_REVIEW_OWN_ROOM);
+//         }
 
 //          if (reviewRepository.existsByUserAndRoomId(currentUser, roomId)) {
 //             throw new AppException(ReviewErrorCode.REVIEW_ALREADY_EXISTS);
@@ -63,6 +63,7 @@
          log.info("User '{}' created a review with ID '{}' for room ID '{}'", currentUser.getUsername(), savedReview.getId(), roomId);
          return ReviewResponse.fromReview(savedReview);
      }
+
 
      /*
       * Get all reviews for a specific room.

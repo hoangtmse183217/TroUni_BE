@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.trouni.tro_uni.enums.RoomType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,29 +30,33 @@ public class Room {
     
     @ManyToOne
     @JoinColumn(name = "owner_user_id", nullable = false)
-    @JsonIgnore // Tránh circular reference khi serialize JSON
     private User owner; // Must be a user with landlord role
     
+    @Nationalized
     @Column(nullable = false, length = 255)
     private String title;
-    
-    @Column(columnDefinition = "TEXT")
+
+    @Nationalized
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "room_type", nullable = false)
     private RoomType roomType = RoomType.PHONG_TRO;
-    
     // Address information
+    @Nationalized
     @Column(name = "street_address", length = 255)
     private String streetAddress;
     
+    @Nationalized
     @Column(length = 100)
     private String city;
-    
+
+    @Nationalized
     @Column(length = 100)
     private String district;
-    
+
+    @Nationalized
     @Column(length = 100)
     private String ward;
     
