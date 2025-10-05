@@ -78,6 +78,7 @@ public class TroUniApplication implements CommandLineRunner {
 			studentProfile.setPhoneNumber("0123456789");
 			studentProfile.setGender("Male");
 			studentProfile.setBadge("Student");
+            studentProfile.setUser(student);
 			student.setProfile(studentProfile);
 			
 			userRepository.save(student);
@@ -109,7 +110,8 @@ public class TroUniApplication implements CommandLineRunner {
 			landlordProfile.setPhoneNumber("0987654321");
 			landlordProfile.setGender("Female");
 			landlordProfile.setBadge("Landlord");
-			landlord.setProfile(landlordProfile);
+            landlordProfile.setUser(landlord);
+            landlord.setProfile(landlordProfile);
 			
 			userRepository.save(landlord);
 			System.out.println("=== LANDLORD ACCOUNT CREATED ===");

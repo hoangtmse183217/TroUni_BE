@@ -67,6 +67,8 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
             @Param("maxArea") BigDecimal maxArea,
             @Param("roomType") RoomType roomType);
 
+    List<Room> findByStatus(String status);
+
     // ================== NEW METHODS (from nguyenvuong-dev branch) ==================
     
     Page<Room> findByOwnerId(UUID ownerId, Pageable pageable);

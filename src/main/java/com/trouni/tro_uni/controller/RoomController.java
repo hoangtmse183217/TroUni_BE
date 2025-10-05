@@ -35,7 +35,7 @@ public class RoomController {
     // ================== ORIGINAL SEARCH AND FILTER APIs (from main branch) ==================
     
     // Tìm phòng cơ bản + filter
-    @PreAuthorize("hasAnyRole('GUEST', 'LANDLORD', 'ADMIN')")
+    @PreAuthorize("permitAll()")
     @GetMapping("/search")
     public ResponseEntity<List<RoomListItemResponse>> searchRooms(RoomSearchRequest request) {
         List<RoomListItemResponse> rooms = roomService.searchRooms(request);
@@ -43,28 +43,21 @@ public class RoomController {
     }
 
     // Danh sách phòng công khai
-    @PreAuthorize("hasAnyRole('GUEST', 'LANDLORD', 'ADMIN')")
     @GetMapping
     public ResponseEntity<List<RoomListItemResponse>> getPublicRooms() {
-        List<RoomListItemResponse> rooms = roomService.getPublicRooms();
-        return ResponseEntity.ok(rooms);
+        return ResponseEntity.ok(roomService.getPublicRooms());
     }
 
     // Tóm tắt thông tin 1 phòng
-    @PreAuthorize("hasAnyRole('GUEST', 'LANDLORD', 'ADMIN')")
     @GetMapping("/{roomId}/summary")
-    public ResponseEntity<RoomSummaryResponse> getRoomSummary(@PathVariable Long roomId) {
+    public ResponseEntity<RoomSummaryResponse> getRoomSummary(@PathVariable UUID roomId) {
         RoomSummaryResponse summary = roomService.getRoomSummary(roomId);
-        if (summary == null) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(summary);
     }
 
     // Lấy ảnh phòng
-    @PreAuthorize("hasAnyRole('GUEST', 'LANDLORD', 'ADMIN')")
     @GetMapping("/{roomId}/images")
-    public ResponseEntity<RoomImagesResponse> getRoomImages(@PathVariable Long roomId) {
+    public ResponseEntity<RoomImagesResponse> getRoomImages(@PathVariable UUID roomId) {
         RoomImagesResponse images = roomService.getRoomImages(roomId);
         return ResponseEntity.ok(images);
     }
