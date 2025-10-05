@@ -5,17 +5,19 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class RoomImageResponse {
-    private Long id;
+    private UUID id;
     private String imageUrl;
     private boolean primary;
 
     public static RoomImageResponse fromRoomImage(RoomImage roomImage) {
         return new RoomImageResponse(
-            roomImage.getId() != null ? roomImage.getId().getMostSignificantBits() : null,
+            roomImage.getId(),
             roomImage.getImageUrl(),
             roomImage.isPrimary()
         );

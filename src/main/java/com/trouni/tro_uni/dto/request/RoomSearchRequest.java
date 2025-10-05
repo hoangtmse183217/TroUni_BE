@@ -9,13 +9,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RoomSearchRequest {
-    private String location; // district/ward/city
+    private String city;
+    private String district;
+    private String ward;
     private Integer minPrice;
     private Integer maxPrice;
     private Double minArea;
     private Double maxArea;
     private RoomType roomType;
-    private Integer page;
-    private Integer size;
 }
 

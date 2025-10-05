@@ -20,6 +20,7 @@ import com.trouni.tro_uni.mapper.RoomMapper;
 import com.trouni.tro_uni.repository.MasterAmenityRepository;
 import com.trouni.tro_uni.repository.RoomRepository;
 import com.trouni.tro_uni.repository.RoomImageRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -45,7 +46,7 @@ public class RoomService {
 
     @Autowired
     private RoomRepository roomRepository;
-    
+
     private final RoomMapper roomMapper;
 
     @Autowired
@@ -58,49 +59,41 @@ public class RoomService {
     /**
      * Search rooms with multiple filters: location, price range, roomType
      */
+    @Transactional(readOnly = true)
     public List<RoomListItemResponse> searchRooms(RoomSearchRequest request) {
-        List<Room> rooms = roomRepository.findAll();
 
-        // filter by location (city, district)
-        if (request.getLocation() != null) {
-            String[] loc = request.getLocation().split(",");
-            String city = loc.length > 0 ? loc[0].trim() : null;
-            String district = loc.length > 1 ? loc[1].trim() : null;
+        String status = "available";
 
-            rooms = rooms.stream()
-                    .filter(r -> (city == null || city.equalsIgnoreCase(r.getCity())))
-                    .filter(r -> (district == null || district.equalsIgnoreCase(r.getDistrict())))
-                    .collect(Collectors.toList());
-        }
+        BigDecimal minPrice = request.getMinPrice() != null ? BigDecimal.valueOf(request.getMinPrice()) : null;
+        BigDecimal maxPrice = request.getMaxPrice() != null ? BigDecimal.valueOf(request.getMaxPrice()) : null;
+        BigDecimal minArea = request.getMinArea() != null ? BigDecimal.valueOf(request.getMinArea()) : null;
+        BigDecimal maxArea = request.getMaxArea() != null ? BigDecimal.valueOf(request.getMaxArea()) : null;
 
-        // filter by price range
-        if (request.getMinPrice() != null && request.getMaxPrice() != null) {
-            BigDecimal min = BigDecimal.valueOf(request.getMinPrice());
-            BigDecimal max = BigDecimal.valueOf(request.getMaxPrice());
-            rooms = rooms.stream()
-                    .filter(r -> r.getPricePerMonth() != null
-                            && r.getPricePerMonth().compareTo(min) >= 0
-                            && r.getPricePerMonth().compareTo(max) <= 0)
-                    .collect(Collectors.toList());
-        }
+        // Sử dụng trực tiếp các trường từ request, không cần xử lý chuỗi nữa
+        List<Room> foundRooms = roomRepository.searchAndFilter(
+                status,
+                request.getCity(),
+                request.getDistrict(),
+                request.getWard(),
+                minPrice,
+                maxPrice,
+                minArea,
+                maxArea,
+                request.getRoomType()
+        );
 
-        // filter by room type
-        if (request.getRoomType() != null) {
-            rooms = rooms.stream()
-                    .filter(r -> request.getRoomType().equals(r.getRoomType()))
-                    .collect(Collectors.toList());
-        }
-
-        return rooms.stream()
+        return foundRooms.stream()
                 .map(this::toRoomListItemResponse)
                 .collect(Collectors.toList());
     }
-
     /**
      * Get all public rooms
      */
+    @Transactional(readOnly = true)
     public List<RoomListItemResponse> getPublicRooms() {
-        return roomRepository.findAll().stream()
+        // Chỉ lấy các phòng có status "available" từ database
+        List<Room> publicRooms = roomRepository.findByStatus("available");
+        return publicRooms.stream()
                 .map(this::toRoomListItemResponse)
                 .collect(Collectors.toList());
     }
@@ -110,50 +103,36 @@ public class RoomService {
      * Nếu không tìm thấy phòng sẽ trả về null.
      * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
      */
-    public RoomSummaryResponse getRoomSummary(Long roomId) {
-        try {
-            Optional<Room> roomOpt = roomRepository.findAll().stream()
-                    .filter(r -> r.getId().getMostSignificantBits() == roomId)
-                    .findFirst();
-            Room room = roomOpt.orElseThrow(() -> new RuntimeException("Room not found"));
-            return toRoomSummaryResponse(room);
-        } catch (RuntimeException e) {
-            // Lỗi không tìm thấy phòng
-            return null;
-        } catch (Exception e) {
-            // Lỗi hệ thống khác
-            return null;
+    @Transactional(readOnly = true)
+    public RoomSummaryResponse getRoomSummary(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Kiểm tra xem phòng có public không
+        if (!"available".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND); // Coi như không tìm thấy
         }
+
+        return toRoomSummaryResponse(room);
     }
+
 
     /**
      * Lấy danh sách ảnh của một phòng theo roomId (dạng mostSignificantBits của UUID).
      * Nếu không tìm thấy phòng sẽ trả về danh sách ảnh rỗng.
      * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
      */
-    public RoomImagesResponse getRoomImages(Long roomId) {
-        try {
-            Optional<Room> roomOpt = roomRepository.findAll().stream()
-                    .filter(r -> r.getId().getMostSignificantBits() == roomId)
-                    .findFirst();
-            UUID roomUuid = roomOpt.orElseThrow(() -> new RuntimeException("Room not found")).getId();
-            List<RoomImage> images = roomImageRepository.findByRoomId(roomUuid);
-            List<RoomImageResponse> imageResponses = images != null ? images.stream()
-                    .filter(img -> img != null)
-                    .map(img -> new RoomImageResponse(
-                            img.getId() != null ? img.getId().getMostSignificantBits() : null,
-                            img.getImageUrl(),
-                            img.isPrimary()
-                    ))
-                    .collect(Collectors.toList()) : new ArrayList<>();
-            return new RoomImagesResponse(imageResponses);
-        } catch (RuntimeException e) {
-            // Lỗi không tìm thấy phòng
-            return new RoomImagesResponse(List.of());
-        } catch (Exception e) {
-            // Lỗi hệ thống khác
-            return new RoomImagesResponse(List.of());
-        }
+    @Transactional(readOnly = true)
+    public RoomImagesResponse getRoomImages(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Lấy danh sách ảnh trực tiếp từ đối tượng room đã được fetch
+        List<RoomImageResponse> imageResponses = room.getImages().stream()
+                .map(RoomImageResponse::fromRoomImage) // Dùng lại phương thức mapping của bạn
+                .collect(Collectors.toList());
+
+        return new RoomImagesResponse(imageResponses);
     }
 
     // ================== NEW CRUD METHODS (from nguyenvuong-dev branch) ==================
@@ -300,7 +279,7 @@ public class RoomService {
         if (request.getStatus() != null) {
             room.setStatus(request.getStatus());
         }
-        
+
         // Always update timestamp
         room.setUpdatedAt(LocalDateTime.now());
 
@@ -384,9 +363,9 @@ public class RoomService {
 
     private RoomListItemResponse toRoomListItemResponse(Room room) {
         return new RoomListItemResponse(
-                room.getId() != null ? room.getId().getMostSignificantBits() : null,  // UUID -> Long
+                room.getId(),
                 room.getTitle(),
-                room.getStreetAddress(),
+                String.join(", ", room.getStreetAddress(), room.getWard(), room.getDistrict(), room.getCity()),
                 room.getRoomType(),
                 room.getAreaSqm() != null ? room.getAreaSqm().doubleValue() : null,
                 room.getPricePerMonth() != null ? room.getPricePerMonth().intValue() : null,
@@ -396,7 +375,7 @@ public class RoomService {
 
     private RoomSummaryResponse toRoomSummaryResponse(Room room) {
         return new RoomSummaryResponse(
-                room.getId() != null ? room.getId().getMostSignificantBits() : null,
+                room.getId(),
                 room.getTitle(),
                 room.getStreetAddress(),
                 room.getRoomType(),
@@ -410,7 +389,13 @@ public class RoomService {
     }
 
     private String getThumbnailUrl(Room room) {
-        Optional<RoomImage> thumbnail = roomImageRepository.findByRoomIdAndPrimaryTrue(room.getId());
-        return thumbnail.map(RoomImage::getImageUrl).orElse(null);
+        if (room.getImages() != null && !room.getImages().isEmpty()) {
+            return room.getImages().stream()
+                    .filter(RoomImage::isPrimary)
+                    .findFirst()
+                    .map(RoomImage::getImageUrl)
+                    .orElse(room.getImages().get(0).getImageUrl());
+        }
+        return null;
     }
 }

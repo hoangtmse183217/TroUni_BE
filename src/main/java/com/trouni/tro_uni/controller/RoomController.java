@@ -36,7 +36,7 @@ public class RoomController {
     // ================== ORIGINAL SEARCH AND FILTER APIs (from main branch) ==================
     
     // Tìm phòng cơ bản + filter
-    @PreAuthorize("hasAnyRole('STUDENT', 'LANDLORD', 'ADMIN')")
+    @PreAuthorize("permitAll()")
     @GetMapping("/search")
     public ResponseEntity<?> searchRooms(RoomSearchRequest request) {
         try {
@@ -49,7 +49,6 @@ public class RoomController {
     }
 
     // Danh sách phòng công khai
-    @PreAuthorize("hasAnyRole('GUEST', 'LANDLORD', 'ADMIN')")
     @GetMapping
     public ResponseEntity<?> getPublicRooms() {
         try {
@@ -62,9 +61,8 @@ public class RoomController {
     }
 
     // Tóm tắt thông tin 1 phòng
-    @PreAuthorize("hasAnyRole('GUEST', 'LANDLORD', 'ADMIN')")
     @GetMapping("/{roomId}/summary")
-    public ResponseEntity<?> getRoomSummary(@PathVariable Long roomId) {
+    public ResponseEntity<?> getRoomSummary(@PathVariable UUID roomId) {
         try {
             RoomSummaryResponse summary = roomService.getRoomSummary(roomId);
             if (summary == null) {
@@ -79,9 +77,8 @@ public class RoomController {
     }
 
     // Lấy ảnh phòng
-    @PreAuthorize("hasAnyRole('GUEST', 'LANDLORD', 'ADMIN')")
     @GetMapping("/{roomId}/images")
-    public ResponseEntity<?> getRoomImages(@PathVariable Long roomId) {
+    public ResponseEntity<?> getRoomImages(@PathVariable UUID roomId) {
         try {
             RoomImagesResponse images = roomService.getRoomImages(roomId);
             return ResponseEntity.ok(ApiResponse.success("Room images retrieved successfully", images));
