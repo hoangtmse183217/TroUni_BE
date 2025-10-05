@@ -23,7 +23,7 @@ public class MasterAmenity {
     private UUID id;
 
     @Nationalized
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String name; // e.g., Wi-Fi, Air Conditioner, Parking
     
     @Nationalized

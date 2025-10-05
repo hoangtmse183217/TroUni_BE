@@ -17,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -70,9 +71,11 @@ public class MasterAmenityService {
     public List<MasterAmenityResponse> getAllMasterAmenities() {
         log.info("Retrieving all master amenities");
         // Fetch all amenities and convert to response DTOs
-        return masterAmenityRepository.findAll().stream()
+        List<MasterAmenity> amenities = masterAmenityRepository.findAll();
+        return amenities != null ? amenities.stream()
+                .filter(amenity -> amenity != null)
                 .map(MasterAmenityResponse::fromMasterAmenity)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
 
     /**
@@ -91,10 +94,11 @@ public class MasterAmenityService {
 
         // Fetch amenities associated with the room
         List<MasterAmenity> masterAmenity = masterAmenityRepository.findByRoomId(roomId);
-        log.info("Retrieved {} amenities for room ID: {}", masterAmenity.size(), roomId);
-        return masterAmenity.stream()
+        log.info("Retrieved {} amenities for room ID: {}", masterAmenity != null ? masterAmenity.size() : 0, roomId);
+        return masterAmenity != null ? masterAmenity.stream()
+                .filter(amenity -> amenity != null)
                 .map(MasterAmenityResponse::fromMasterAmenity)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
 
     /**

@@ -18,7 +18,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -99,9 +101,10 @@ public class BookmarkService {
         User currentUser = getCurrentUser();
         List<Bookmark> bookmarks = bookmarkRepository.findByUser(currentUser);
         
-        return bookmarks.stream()
+        return bookmarks != null ? bookmarks.stream()
+                .filter(Objects::nonNull)
                 .map(BookmarkResponse::fromBookmark)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
     
     /**

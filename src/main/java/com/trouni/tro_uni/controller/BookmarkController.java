@@ -43,6 +43,7 @@ public class BookmarkController {
      * @return ResponseEntity - Kết quả bookmark
      */
     @PostMapping
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> bookmarkRoom(@Valid @RequestBody BookmarkRequest request) {
         try {
             BookmarkResponse bookmark = bookmarkService.bookmarkRoom(request.getRoomId());
@@ -62,6 +63,7 @@ public class BookmarkController {
      * @return ResponseEntity - Kết quả unbookmark
      */
     @DeleteMapping("/{roomId}")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> unbookmarkRoom(@PathVariable UUID roomId) {
         try {
             bookmarkService.unbookmarkRoom(roomId);
@@ -81,6 +83,7 @@ public class BookmarkController {
      * @return ResponseEntity - Kết quả toggle
      */
     @PostMapping("/{roomId}/toggle")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> toggleBookmark(@PathVariable UUID roomId) {
         try {
             BookmarkResponse result = bookmarkService.toggleBookmark(roomId);

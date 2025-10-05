@@ -1,5 +1,6 @@
 package com.trouni.tro_uni.controller;
 
+import com.trouni.tro_uni.dto.common.ApiResponse;
 import com.trouni.tro_uni.dto.request.room.RoomImageRequest;
 import com.trouni.tro_uni.dto.response.room.RoomImageResponse;
 import com.trouni.tro_uni.entity.User;
@@ -9,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,15 +31,22 @@ public class RoomImageController {
      * @param currentUser - Authenticated user (must be room owner)
      * @param roomId      - The ID of the room to add the image to
      * @param request     - The image information to be added
-     * @return ResponseEntity<RoomImageResponse>
+     * @return ResponseEntity<?>
      */
     @PostMapping("/{roomId}")
-    public ResponseEntity<List<RoomImageResponse>> createRoomImages(
+    @PreAuthorize("hasRole('LANDLORD') or hasRole('ADMIN')")
+    public ResponseEntity<?> createRoomImages(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID roomId,
             @Valid @RequestBody RoomImageRequest request
     ) {
-        return ResponseEntity.ok(roomImageService.createRoomImages(currentUser, roomId, request));
+        try {
+            List<RoomImageResponse> images = roomImageService.createRoomImages(currentUser, roomId, request);
+            return ResponseEntity.ok(ApiResponse.success("Room images added successfully", images));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("CREATE_ROOM_IMAGES_ERROR", "Failed to add room images: " + e.getMessage()));
+        }
     }
 
 
@@ -45,13 +54,19 @@ public class RoomImageController {
      * Get all images for a specific room
      *
      * @param roomId - The ID of the room
-     * @return ResponseEntity<List<RoomImageResponse>>
+     * @return ResponseEntity<?>
      */
     @GetMapping("/{roomId}")
-    public ResponseEntity<List<RoomImageResponse>> getRoomImages(
+    public ResponseEntity<?> getRoomImages(
             @PathVariable UUID roomId
     ) {
-        return ResponseEntity.ok(roomImageService.getRoomImages(roomId));
+        try {
+            List<RoomImageResponse> images = roomImageService.getRoomImages(roomId);
+            return ResponseEntity.ok(ApiResponse.success("Room images retrieved successfully", images));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ROOM_IMAGES_ERROR", "Failed to get room images: " + e.getMessage()));
+        }
     }
 
     /**
@@ -59,14 +74,20 @@ public class RoomImageController {
      *
      * @param currentUser - Authenticated user (must be room owner)
      * @param imageId     - The ID of the image to be deleted
-     * @return ResponseEntity<Void>
+     * @return ResponseEntity<?>
      */
     @DeleteMapping("/{imageId}")
-    public ResponseEntity<Void> deleteRoomImage(
+    @PreAuthorize("hasRole('LANDLORD') or hasRole('ADMIN')")
+    public ResponseEntity<?> deleteRoomImage(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID imageId
     ) {
-        roomImageService.deleteRoomImage(currentUser, imageId);
-        return ResponseEntity.noContent().build();
+        try {
+            roomImageService.deleteRoomImage(currentUser, imageId);
+            return ResponseEntity.ok(ApiResponse.success("Room image deleted successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("DELETE_ROOM_IMAGE_ERROR", "Failed to delete room image: " + e.getMessage()));
+        }
     }
 }

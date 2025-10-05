@@ -101,3 +101,4 @@ mvn spring-boot:run -Dspring-boot.run.profiles=cloud
 # Check active profile
 echo $SPRING_PROFILES_ACTIVE
 ```
+

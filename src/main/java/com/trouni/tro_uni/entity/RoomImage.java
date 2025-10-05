@@ -31,15 +31,11 @@ public class RoomImage {
     
     @Column(name = "description")
     private String description;
-    
+
     @Column(name = "is_primary")
     private boolean primary = false; // To set a cover image for the room
     
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
-    
-    // Getter method for isPrimary to match the DTO
-    public boolean isPrimary() {
-        return primary;
-    }
+
 }

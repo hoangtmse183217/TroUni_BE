@@ -16,7 +16,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -49,19 +51,24 @@ public class RoomImageService {
             throw new AppException(RoomErrorCode.NOT_LANDLORD);
         }
 
-        List<RoomImage> images = request.getImageUrl().stream()
-                .map(url -> RoomImage.builder()
-                        .room(room)
-                        .imageUrl(url)
-                        .primary(false) // mặc định
-                        .build())
-                .toList();
+        List<RoomImage> images = new ArrayList<>();
+        if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {
+            images = request.getImageUrl().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(url -> RoomImage.builder()
+                            .room(room)
+                            .imageUrl(url)
+                            .primary(false) // mặc định
+                            .build())
+                    .toList();
+        }
 
         List<RoomImage> saved = roomImageRepository.saveAll(images);
 
         return saved.stream()
-                .map(RoomImageResponse::fromRoomImage)
-                .toList();
+                        .filter(Objects::nonNull)
+                        .map(RoomImageResponse::fromRoomImage)
+                        .toList();
     }
 
     /**
@@ -79,10 +86,11 @@ public class RoomImageService {
         log.info("Retrieving images for room ID: {}", roomId);
 
         List<RoomImage> roomImages = roomImageRepository.findByRoomId(roomId);
-        log.info("Retrieved {} images for room ID: {}", roomImages.size(), roomId);
-        return roomImages.stream()
+        log.info("Retrieved {} images for room ID: {}", roomImages != null ? roomImages.size() : 0, roomId);
+        return roomImages != null ? roomImages.stream()
+                .filter(img -> img != null)
                 .map(RoomImageResponse::fromRoomImage)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
 
     /**

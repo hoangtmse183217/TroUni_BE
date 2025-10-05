@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "trouni-complete-api-collection",
-		"name": "TroUni Complete API Collection",
-		"description": "Complete API collection for TroUni with ALL endpoints - Each request can run independently\n\nIncludes ALL controllers: Auth, User, Profile, Email Verification, Room, Bookmark, Roommate Posts, Reports",
+		"name": "TroUni Complete API Collection - Enhanced",
+		"description": "Complete API collection for TroUni with ALL endpoints - Enhanced with comprehensive test cases and variable management\n\nIncludes ALL controllers: Auth, User, Profile, Email Verification, Room, Bookmark, Roommate Posts, Reports, Reviews, Room Images, Master Amenities\n\nFeatures:\n- Comprehensive test cases for each API\n- Automatic variable setting and management\n- Response validation\n- Error handling tests\n- Performance monitoring",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -10,15 +10,25 @@
 			"name": "Authentication",
 			"item": [
 				{
-					"name": "Login",
+					"name": "Login User",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
-									"}"
+									"// Set default base URL if not set",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"    console.log('🔧 Base URL set to: ' + pm.collectionVariables.get('baseUrl'));",
+									"}",
+									"",
+									"// Generate test data",
+									"const timestamp = new Date().getTime();",
+									"pm.collectionVariables.set('testTimestamp', timestamp);",
+									"pm.collectionVariables.set('testUsername', 'testuser_' + timestamp);",
+									"pm.collectionVariables.set('testEmail', 'test_' + timestamp + '@example.com');",
+									"",
+									"console.log('🚀 Starting login test with username: ' + pm.collectionVariables.get('testUsername'));"
 								],
 								"type": "text/javascript"
 							}
@@ -27,15 +37,72 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.token) {",
-									"    pm.environment.set('token', pm.response.json().data.token);",
-									"    console.log('✅ JWT token saved: ' + pm.response.json().data.token.substring(0, 50) + '...');",
+									"// Performance monitoring",
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"// Status code validation",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Response structure validation",
+									"pm.test('Response has correct structure', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('code');",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson).to.have.property('data');",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"});",
+									"",
+									"// Authentication data validation",
+									"pm.test('Response contains authentication data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data) {",
+									"        pm.expect(responseJson.data).to.have.property('token');",
+									"        pm.expect(responseJson.data).to.have.property('user');",
+									"        pm.expect(responseJson.data.token).to.be.a('string');",
+									"        pm.expect(responseJson.data.token.length).to.be.above(10);",
+									"    }",
+									"});",
+									"",
+									"// User data validation",
+									"pm.test('User data is valid', function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.user) {",
+									"        const user = responseJson.data.user;",
+									"        pm.expect(user).to.have.property('id');",
+									"        pm.expect(user).to.have.property('username');",
+									"        pm.expect(user).to.have.property('email');",
+									"        pm.expect(user.id).to.be.a('string');",
+									"        pm.expect(user.username).to.be.a('string');",
+									"    }",
+									"});",
+									"",
+									"// Auto-set variables for successful login",
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.token) {",
+									"        pm.collectionVariables.set('token', responseJson.data.token);",
+									"        pm.collectionVariables.set('authToken', responseJson.data.token);",
+									"        console.log('✅ JWT token saved: ' + responseJson.data.token.substring(0, 50) + '...');",
+									"    }",
+									"    if (responseJson.data && responseJson.data.user) {",
+									"        pm.collectionVariables.set('userId', responseJson.data.user.id);",
+									"        pm.collectionVariables.set('username', responseJson.data.user.username);",
+									"        pm.collectionVariables.set('userEmail', responseJson.data.user.email);",
+									"        pm.collectionVariables.set('userRole', responseJson.data.user.role);",
+									"        console.log('✅ User info saved: ' + responseJson.data.user.username);",
+									"    }",
 									"}",
-									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.user) {",
-									"    pm.environment.set('userId', pm.response.json().data.user.id);",
-									"    pm.environment.set('username', pm.response.json().data.user.username);",
-									"    console.log('✅ User info saved: ' + pm.response.json().data.user.username);",
-									"}"
+									"",
+									"// Error handling test",
+									"pm.test('No server errors', function () {",
+									"    pm.expect(pm.response.code).to.not.be.oneOf([500, 502, 503, 504]);",
+									"});",
+									"",
+									"console.log('✅ Login test completed successfully');"
 								],
 								"type": "text/javascript"
 							}
@@ -61,14 +128,14 @@
 					}
 				},
 				{
-					"name": "Register",
+					"name": "Register New User",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -85,7 +152,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+							"raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"role\": \"STUDENT\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/signup",
@@ -95,17 +162,17 @@
 					}
 				},
 				{
-					"name": "Get Current User",
+					"name": "Get Current User Info",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}"
 								],
@@ -129,17 +196,17 @@
 					}
 				},
 				{
-					"name": "Logout",
+					"name": "Logout User",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}"
 								],
@@ -163,14 +230,14 @@
 					}
 				},
 				{
-					"name": "Google Login",
+					"name": "Login with Google",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -197,14 +264,14 @@
 					}
 				},
 				{
-					"name": "Forgot Password",
+					"name": "Request Password Reset",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -231,14 +298,14 @@
 					}
 				},
 				{
-					"name": "Reset Password",
+					"name": "Reset Password with Token",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -270,17 +337,17 @@
 			"name": "User Management",
 			"item": [
 				{
-					"name": "Get All Users",
+					"name": "Get All Users List",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}"
 								],
@@ -304,21 +371,21 @@
 					}
 				},
 				{
-					"name": "Get User by Username",
+					"name": "Get User Details by Username",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}",
-									"if (!pm.environment.get('username')) {",
-									"    pm.environment.set('username', 'testuser');",
+									"if (!pm.collectionVariables.get('username')) {",
+									"    pm.collectionVariables.set('username', 'testuser');",
 									"    console.log('ℹ️ Using default username=testuser');",
 									"}"
 								],
@@ -342,17 +409,17 @@
 					}
 				},
 				{
-					"name": "Check Token Status",
+					"name": "Validate JWT Token Status",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please set a valid JWT token to check');",
 									"}"
 								],
@@ -380,14 +447,14 @@
 					}
 				},
 				{
-					"name": "Get Blacklist Stats",
+					"name": "Get Token Blacklist Statistics",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -405,17 +472,17 @@
 					}
 				},
 				{
-					"name": "Update Current User",
+					"name": "Update Current User Info",
 					"event": [
 						{
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}"
 								],
@@ -453,15 +520,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login with Admin/Manager role');",
 									"}",
-									"if (!pm.environment.get('userId')) {",
-									"    pm.environment.set('userId', '1');",
+									"if (!pm.collectionVariables.get('userId')) {",
+									"    pm.collectionVariables.set('userId', '1');",
 									"    console.log('ℹ️ Using default userId=1');",
 									"}"
 								],
@@ -499,15 +566,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login with Admin/Manager role');",
 									"}",
-									"if (!pm.environment.get('userId')) {",
-									"    pm.environment.set('userId', '1');",
+									"if (!pm.collectionVariables.get('userId')) {",
+									"    pm.collectionVariables.set('userId', '1');",
 									"    console.log('ℹ️ Using default userId=1');",
 									"}"
 								],
@@ -537,15 +604,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login with Admin role (ONLY Admin can hard delete)');",
 									"}",
-									"if (!pm.environment.get('userId')) {",
-									"    pm.environment.set('userId', '1');",
+									"if (!pm.collectionVariables.get('userId')) {",
+									"    pm.collectionVariables.set('userId', '1');",
 									"    console.log('ℹ️ Using default userId=1');",
 									"}"
 								],
@@ -580,11 +647,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}"
 								],
@@ -614,11 +681,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}"
 								],
@@ -656,15 +723,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first or set a valid JWT token');",
 									"}",
-									"if (!pm.environment.get('userId')) {",
-									"    pm.environment.set('userId', '1');",
+									"if (!pm.collectionVariables.get('userId')) {",
+									"    pm.collectionVariables.set('userId', '1');",
 									"    console.log('ℹ️ Using default userId=1');",
 									"}"
 								],
@@ -699,8 +766,8 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -733,8 +800,8 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -767,8 +834,8 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -794,196 +861,6 @@
 			]
 		},
 		{
-			"name": "Room Management",
-			"item": [
-				{
-					"name": "Get Available Rooms",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						},
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.content) {",
-									"    const rooms = pm.response.json().data.content;",
-									"    if (rooms.length > 0 && rooms[0].id) {",
-									"        pm.environment.set('roomId', rooms[0].id);",
-									"        console.log('✅ Room ID saved: ' + rooms[0].id);",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/rooms?page=0&size=10&sortBy=createdAt&sortDir=desc",
-							"host": ["{{baseUrl}}"],
-							"path": ["rooms"],
-							"query": [
-								{
-									"key": "page",
-									"value": "0"
-								},
-								{
-									"key": "size",
-									"value": "10"
-								},
-								{
-									"key": "sortBy",
-									"value": "createdAt"
-								},
-								{
-									"key": "sortDir",
-									"value": "desc"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Search Rooms",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/rooms/search?city=Ho Chi Minh City&district=District 1&minPrice=1000000&maxPrice=10000000&page=0&size=10",
-							"host": ["{{baseUrl}}"],
-							"path": ["rooms", "search"],
-							"query": [
-								{
-									"key": "city",
-									"value": "Ho Chi Minh City"
-								},
-								{
-									"key": "district",
-									"value": "District 1"
-								},
-								{
-									"key": "minPrice",
-									"value": "1000000"
-								},
-								{
-									"key": "maxPrice",
-									"value": "10000000"
-								},
-								{
-									"key": "page",
-									"value": "0"
-								},
-								{
-									"key": "size",
-									"value": "10"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Get Room Details",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
-									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
-									"    console.log('⚠️ Please login first or set a valid JWT token');",
-									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
-									"    console.log('ℹ️ Using default roomId=1');",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/rooms/{{roomId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["rooms", "{{roomId}}"]
-						}
-					}
-				},
-				{
-					"name": "Get Room Analytics (Landlord/Admin Only)",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
-									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
-									"    console.log('⚠️ Please login with Landlord/Admin role (Managers cannot access analytics)');",
-									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
-									"    console.log('ℹ️ Using default roomId=1');",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/rooms/{{roomId}}/analytics",
-							"host": ["{{baseUrl}}"],
-							"path": ["rooms", "{{roomId}}", "analytics"]
-						}
-					}
-				}
-			]
-		},
-		{
 			"name": "Bookmark Management",
 			"item": [
 				{
@@ -993,15 +870,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '1');",
 									"    console.log('ℹ️ Using default roomId=1');",
 									"}"
 								],
@@ -1039,15 +916,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '1');",
 									"    console.log('ℹ️ Using default roomId=1');",
 									"}"
 								],
@@ -1077,15 +954,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '1');",
 									"    console.log('ℹ️ Using default roomId=1');",
 									"}"
 								],
@@ -1115,11 +992,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}"
 								],
@@ -1159,11 +1036,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}"
 								],
@@ -1193,15 +1070,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '1');",
 									"    console.log('ℹ️ Using default roomId=1');",
 									"}"
 								],
@@ -1236,11 +1113,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}"
 								],
@@ -1251,9 +1128,10 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.id) {",
-									"    pm.environment.set('postId', pm.response.json().data.id);",
-									"    console.log('✅ Post ID saved: ' + pm.response.json().data.id);",
+									"const responseJson = pm.response.json();",
+									"if (responseJson && responseJson.data && responseJson.data.id) {",
+									"    pm.collectionVariables.set('postId', responseJson.data.id);",
+									"    console.log('✅ Post ID saved: ' + responseJson.data.id);",
 									"}"
 								],
 								"type": "text/javascript"
@@ -1290,8 +1168,8 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -1304,7 +1182,7 @@
 									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.content) {",
 									"    const posts = pm.response.json().data.content;",
 									"    if (posts.length > 0 && posts[0].id) {",
-									"        pm.environment.set('postId', posts[0].id);",
+									"        pm.collectionVariables.set('postId', posts[0].id);",
 									"        console.log('✅ Post ID saved: ' + posts[0].id);",
 									"    }",
 									"}"
@@ -1344,11 +1222,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('postId')) {",
-									"    pm.environment.set('postId', '1');",
+									"if (!pm.collectionVariables.get('postId')) {",
+									"    pm.collectionVariables.set('postId', '1');",
 									"    console.log('ℹ️ Using default postId=1');",
 									"}"
 								],
@@ -1373,15 +1251,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}",
-									"if (!pm.environment.get('postId')) {",
-									"    pm.environment.set('postId', '1');",
+									"if (!pm.collectionVariables.get('postId')) {",
+									"    pm.collectionVariables.set('postId', '1');",
 									"    console.log('ℹ️ Using default postId=1');",
 									"}"
 								],
@@ -1419,15 +1297,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first (Student/Admin/Manager can delete)');",
 									"}",
-									"if (!pm.environment.get('postId')) {",
-									"    pm.environment.set('postId', '1');",
+									"if (!pm.collectionVariables.get('postId')) {",
+									"    pm.collectionVariables.set('postId', '1');",
 									"    console.log('ℹ️ Using default postId=1');",
 									"}"
 								],
@@ -1457,11 +1335,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}"
 								],
@@ -1491,8 +1369,8 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -1534,8 +1412,8 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -1578,15 +1456,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '1');",
 									"    console.log('ℹ️ Using default roomId=1 for report');",
 									"}"
 								],
@@ -1597,9 +1475,10 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.json() && pm.response.json().data && pm.response.json().data.id) {",
-									"    pm.environment.set('reportId', pm.response.json().data.id);",
-									"    console.log('✅ Report ID saved: ' + pm.response.json().data.id);",
+									"const responseJson = pm.response.json();",
+									"if (responseJson && responseJson.data && responseJson.data.id) {",
+									"    pm.collectionVariables.set('reportId', responseJson.data.id);",
+									"    console.log('✅ Report ID saved: ' + responseJson.data.id);",
 									"}"
 								],
 								"type": "text/javascript"
@@ -1636,11 +1515,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login first');",
 									"}"
 								],
@@ -1670,11 +1549,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login with Manager/Admin role');",
 									"}"
 								],
@@ -1718,15 +1597,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login with Manager/Admin role');",
 									"}",
-									"if (!pm.environment.get('reportId')) {",
-									"    pm.environment.set('reportId', '1');",
+									"if (!pm.collectionVariables.get('reportId')) {",
+									"    pm.collectionVariables.set('reportId', '1');",
 									"    console.log('ℹ️ Using default reportId=1');",
 									"}"
 								],
@@ -1764,15 +1643,15 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login with Manager/Admin role');",
 									"}",
-									"if (!pm.environment.get('roomId')) {",
-									"    pm.environment.set('roomId', '1');",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '1');",
 									"    console.log('ℹ️ Using default roomId=1');",
 									"}"
 								],
@@ -1802,8 +1681,8 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -1827,11 +1706,11 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"if (!pm.environment.get('baseUrl')) {",
-									"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
 									"}",
-									"if (!pm.environment.get('token')) {",
-									"    pm.environment.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
 									"    console.log('⚠️ Please login with Manager/Admin role');",
 									"}"
 								],
@@ -1855,43 +1734,1200 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Room Management",
+			"item": [
+				{
+					"name": "Search Rooms",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains search results', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    pm.expect(responseJson.data).to.be.an('array');",
+									"    if (responseJson.data && responseJson.data.length > 0) {",
+									"        pm.collectionVariables.set('roomId', responseJson.data[0].id);",
+									"        console.log('✅ Room ID saved: ' + responseJson.data[0].id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/search?city=Ho Chi Minh City&district=District 1&minPrice=1000000&maxPrice=10000000",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms", "search"],
+							"query": [
+								{
+									"key": "city",
+									"value": "Ho Chi Minh City"
+								},
+								{
+									"key": "district",
+									"value": "District 1"
+								},
+								{
+									"key": "minPrice",
+									"value": "1000000"
+								},
+								{
+									"key": "maxPrice",
+									"value": "10000000"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Public Rooms",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains public rooms', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    pm.expect(responseJson.data).to.be.an('array');",
+									"    if (responseJson.data && responseJson.data.length > 0) {",
+									"        pm.collectionVariables.set('roomId', responseJson.data[0].id);",
+									"        console.log('✅ Room ID saved: ' + responseJson.data[0].id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms"]
+						}
+					}
+				},
+				{
+					"name": "Create New Room",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 3000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has room data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data) {",
+									"        pm.expect(responseJson.data).to.have.property('id');",
+									"        pm.collectionVariables.set('roomId', responseJson.data.id);",
+									"        console.log('✅ Room ID saved: ' + responseJson.data.id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Beautiful Studio Apartment\",\n  \"description\": \"Modern studio apartment in city center\",\n  \"roomType\": \"PHONG_TRO\",\n  \"streetAddress\": \"123 Main Street\",\n  \"city\": \"Ho Chi Minh City\",\n  \"district\": \"District 1\",\n  \"ward\": \"Ben Nghe\",\n  \"latitude\": 10.7769,\n  \"longitude\": 106.7009,\n  \"pricePerMonth\": 5000000,\n  \"areaSqm\": 25.5,\n  \"status\": \"available\",\n  \"images\": [\n    \"https://example.com/image1.jpg\",\n    \"https://example.com/image2.jpg\"\n  ],\n  \"amenities\": [\n    {\n      \"name\": \"WiFi\",\n      \"description\": \"High-speed internet\",\n      \"icon\": \"wifi-icon\",\n      \"isActive\": true\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/room",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms", "room"]
+						}
+					}
+				},
+				{
+					"name": "Get Room Details (UUID)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 1000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains room details', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('code');",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson).to.have.property('data');",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    if (responseJson.data) {",
+									"        pm.expect(responseJson.data).to.have.property('id');",
+									"        pm.expect(responseJson.data).to.have.property('title');",
+									"        pm.expect(responseJson.data).to.have.property('pricePerMonth');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/{{roomId}}/details",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms", "{{roomId}}", "details"]
+						}
+					}
+				},
+				{
+					"name": "Update Room Details",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Room updated successfully', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('code');",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson).to.have.property('data');",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    if (responseJson.data) {",
+									"        pm.expect(responseJson.data).to.have.property('id');",
+									"        pm.expect(responseJson.data.title).to.include('Updated');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Beautiful Studio Apartment\",\n  \"description\": \"Updated modern studio apartment in city center\",\n  \"pricePerMonth\": 5500000,\n  \"areaSqm\": 26.0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Room by ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 204 (No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"pm.test('Room deleted successfully', function () {",
+									"    pm.expect(pm.response.body).to.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Get All Rooms (Paginated)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 1500ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has pagination data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('code');",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson).to.have.property('data');",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    if (responseJson.data) {",
+									"        pm.expect(responseJson.data).to.have.property('content');",
+									"        pm.expect(responseJson.data).to.have.property('totalElements');",
+									"        pm.expect(responseJson.data.content).to.be.an('array');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/paginated?page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms", "paginated"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Rooms",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is an array', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('code');",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson).to.have.property('data');",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    pm.expect(responseJson.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rooms", "all"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Review Management",
+			"item": [
+				{
+					"name": "Create Room Review",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 201 (Created)', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Review created successfully', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    pm.expect(responseJson.message).to.include('Review created successfully');",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('reviewId', responseJson.data.id);",
+									"        console.log('✅ Review ID saved: ' + responseJson.data.id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"score\": 5,\n  \"comment\": \"Excellent room! Very clean and modern.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reviews/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["reviews", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Reviews by Room",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 1000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains reviews', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    pm.expect(responseJson.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reviews/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["reviews", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Room Review",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('reviewId')) {",
+									"    pm.collectionVariables.set('reviewId', '550e8400-e29b-41d4-a716-446655440001');",
+									"    console.log('ℹ️ Using default review ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Review updated successfully', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    if (responseJson.data) {",
+									"        pm.expect(responseJson.data.comment).to.include('Updated');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"score\": 4,\n  \"comment\": \"Updated: Good room with minor issues.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reviews/{{reviewId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["reviews", "{{reviewId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Room Review",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('reviewId')) {",
+									"    pm.collectionVariables.set('reviewId', '550e8400-e29b-41d4-a716-446655440001');",
+									"    console.log('ℹ️ Using default review ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Review deleted successfully', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reviews/{{reviewId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["reviews", "{{reviewId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Room Image Management",
+			"item": [
+				{
+					"name": "Add Room Images",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 3000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Images added successfully', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    pm.expect(responseJson.data).to.be.an('array');",
+									"    if (responseJson.data && responseJson.data.length > 0) {",
+									"        pm.collectionVariables.set('imageId', responseJson.data[0].id);",
+									"        console.log('✅ Image ID saved: ' + responseJson.data[0].id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"imageUrls\": [\n    \"https://example.com/image1.jpg\",\n    \"https://example.com/image2.jpg\",\n    \"https://example.com/image3.jpg\"\n  ],\n  \"descriptions\": [\n    \"Living room view\",\n    \"Kitchen area\",\n    \"Bedroom\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/room-images/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["room-images", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Room Images",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 1000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains images', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/room-images/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["room-images", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Room Image",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('imageId')) {",
+									"    pm.collectionVariables.set('imageId', '550e8400-e29b-41d4-a716-446655440002');",
+									"    console.log('ℹ️ Using default image ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 204 (No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"pm.test('Image deleted successfully', function () {",
+									"    pm.expect(pm.response.body).to.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/room-images/{{imageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["room-images", "{{imageId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Master Amenity Management",
+			"item": [
+				{
+					"name": "Create Master Amenity",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('roomId')) {",
+									"    pm.collectionVariables.set('roomId', '550e8400-e29b-41d4-a716-446655440000');",
+									"    console.log('ℹ️ Using default room ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 201 (Created)', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Amenity created successfully', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.code).to.eql('SUCCESS');",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('amenityId', responseJson.data.id);",
+									"        console.log('✅ Amenity ID saved: ' + responseJson.data.id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"WiFi\",\n  \"description\": \"High-speed internet connection\",\n  \"icon\": \"wifi-icon\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/master-amenities/{{roomId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["master-amenities", "{{roomId}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Master Amenities",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('amenityId')) {",
+									"    pm.collectionVariables.set('amenityId', '550e8400-e29b-41d4-a716-446655440003');",
+									"    console.log('ℹ️ Using default amenity ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 1000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+									"});",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains amenities', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/master-amenities/{{amenityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["master-amenities", "{{amenityId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Master Amenity",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.collectionVariables.get('baseUrl')) {",
+									"    pm.collectionVariables.set('baseUrl', 'http://localhost:8080');",
+									"}",
+									"if (!pm.collectionVariables.get('token')) {",
+									"    pm.collectionVariables.set('token', 'YOUR_JWT_TOKEN_HERE');",
+									"    console.log('⚠️ Please login first');",
+									"}",
+									"if (!pm.collectionVariables.get('amenityId')) {",
+									"    pm.collectionVariables.set('amenityId', '550e8400-e29b-41d4-a716-446655440003');",
+									"    console.log('ℹ️ Using default amenity ID');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response time is less than 2000ms', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test('Status code is 204 (No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"pm.test('Amenity deleted successfully', function () {",
+									"    pm.expect(pm.response.body).to.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/master-amenities/{{amenityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["master-amenities", "{{amenityId}}"]
+						}
+					}
+				}
+			]
 		}
 	],
 	"variable": [
 		{
 			"key": "baseUrl",
 			"value": "http://localhost:8080",
-			"type": "string"
+			"type": "string",
+			"description": "Base URL for the API server"
 		},
 		{
 			"key": "token",
 			"value": "YOUR_JWT_TOKEN_HERE",
-			"type": "string"
+			"type": "string",
+			"description": "JWT authentication token"
+		},
+		{
+			"key": "authToken",
+			"value": "YOUR_JWT_TOKEN_HERE",
+			"type": "string",
+			"description": "Alternative JWT token variable"
 		},
 		{
 			"key": "userId",
 			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "roomId",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "postId",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "reportId",
-			"value": "1",
-			"type": "string"
+			"type": "string",
+			"description": "Current user ID"
 		},
 		{
 			"key": "username",
 			"value": "testuser",
-			"type": "string"
+			"type": "string",
+			"description": "Current username"
+		},
+		{
+			"key": "userEmail",
+			"value": "testuser@example.com",
+			"type": "string",
+			"description": "Current user email"
+		},
+		{
+			"key": "userRole",
+			"value": "STUDENT",
+			"type": "string",
+			"description": "Current user role"
+		},
+		{
+			"key": "roomId",
+			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"type": "string",
+			"description": "Room ID for testing (set by Create New Room API)"
+		},
+		{
+			"key": "postId",
+			"value": "550e8400-e29b-41d4-a716-446655440001",
+			"type": "string",
+			"description": "Roommate post ID"
+		},
+		{
+			"key": "reportId",
+			"value": "550e8400-e29b-41d4-a716-446655440002",
+			"type": "string",
+			"description": "Report ID"
+		},
+		{
+			"key": "reviewId",
+			"value": "550e8400-e29b-41d4-a716-446655440003",
+			"type": "string",
+			"description": "Review ID"
+		},
+		{
+			"key": "imageId",
+			"value": "550e8400-e29b-41d4-a716-446655440004",
+			"type": "string",
+			"description": "Room image ID"
+		},
+		{
+			"key": "amenityId",
+			"value": "550e8400-e29b-41d4-a716-446655440005",
+			"type": "string",
+			"description": "Master amenity ID"
+		},
+		{
+			"key": "testTimestamp",
+			"value": "",
+			"type": "string",
+			"description": "Timestamp for test data generation"
+		},
+		{
+			"key": "testUsername",
+			"value": "",
+			"type": "string",
+			"description": "Generated test username"
+		},
+		{
+			"key": "testEmail",
+			"value": "",
+			"type": "string",
+			"description": "Generated test email"
 		}
 	]
 }

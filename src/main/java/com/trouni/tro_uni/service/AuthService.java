@@ -18,6 +18,7 @@ import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
 import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
 import com.trouni.tro_uni.exception.errorcode.TokenErrorCode;
+import com.trouni.tro_uni.mapper.UserMapper;
 import com.trouni.tro_uni.repository.ProfileRepository;
 import com.trouni.tro_uni.repository.UserRepository;
 import com.trouni.tro_uni.util.JwtUtil;
@@ -65,6 +66,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;             // Mã hóa password
     private final JwtUtil jwtUtil;                             // Utility tạo JWT token
     private final EmailVerificationService emailVerificationService; // Service xác thực email
+    private final UserMapper userMapper;                       // MapStruct mapper for User
 
     /**
      * Xác thực người dùng đăng nhập
@@ -430,15 +432,8 @@ public class AuthService {
         // Cập nhật email (nếu có)
         validateAndUpdateEmail(targetUser, updateRequest.getEmail());
         
-        // Cập nhật role (nếu có)
-        if (updateRequest.getRole() != null) {
-            targetUser.setRole(updateRequest.getRole());
-        }
-        
-        // Cập nhật status (nếu có)
-        if (updateRequest.getStatus() != null) {
-            targetUser.setStatus(updateRequest.getStatus());
-        }
+        // Use mapper to update fields
+        userMapper.updateUserFields(updateRequest, targetUser);
         
         // Lưu user đã cập nhật
         User savedUser = userRepository.save(targetUser);

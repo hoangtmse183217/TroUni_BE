@@ -10,6 +10,7 @@ import com.trouni.tro_uni.service.ProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -79,6 +80,7 @@ public class ProfileController {
      * @return ResponseEntity - Response chứa profile đã cập nhật
      */
     @PutMapping("/me")
+    @PreAuthorize("hasAnyRole('STUDENT', 'LANDLORD', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<ProfileResponse>> updateCurrentUserProfile(@Valid @RequestBody UpdateProfileRequest updateRequest) {
         try {
             User currentUser = authService.getCurrentUser();

@@ -159,13 +159,16 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",    // Swagger API docs
                                 "/swagger-ui/**",     // Swagger UI
                                 "/swagger-ui.html",   // Swagger UI HTML
-                                "/api/rooms/**",      // Room endpoints (original search APIs)
-                                "/room-images/**",    // Room-image endpoints
-                                "/reviews/**",        // Review endpoints
-                                "/master-amenities/**" // Master-amenity endpoints
+                                "/api/rooms/search",  // Room search (public)
+                                "/api/rooms/public",  // Public room listing
+                                "/api/rooms/{id}/details", // Room details (public)
+                                "/api/rooms/{id}/images",  // Room images (public)
+                                "/api/rooms/{id}/summary", // Room summary (public)
+                                "/reviews/{roomId}",  // Get reviews by room (public)
+                                "/master-amenities/{id}" // Get master amenities (public)
                         ).permitAll()
 
-                        // Tất cả các endpoint khác cần authentication
+                        // Tất cả các endpoint khác cần authentication (sẽ được kiểm tra bởi @PreAuthorize)
                         .anyRequest().authenticated()
                 )
                 // Thêm JWT filter trước UsernamePasswordAuthenticationFilter

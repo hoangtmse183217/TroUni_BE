@@ -16,6 +16,7 @@ import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
+import com.trouni.tro_uni.mapper.RoomMapper;
 import com.trouni.tro_uni.repository.MasterAmenityRepository;
 import com.trouni.tro_uni.repository.RoomRepository;
 import com.trouni.tro_uni.repository.RoomImageRepository;
@@ -44,6 +45,8 @@ public class RoomService {
 
     @Autowired
     private RoomRepository roomRepository;
+    
+    private final RoomMapper roomMapper;
 
     @Autowired
     private RoomImageRepository roomImageRepository;
@@ -135,13 +138,14 @@ public class RoomService {
                     .findFirst();
             UUID roomUuid = roomOpt.orElseThrow(() -> new RuntimeException("Room not found")).getId();
             List<RoomImage> images = roomImageRepository.findByRoomId(roomUuid);
-            List<RoomImageResponse> imageResponses = images.stream()
+            List<RoomImageResponse> imageResponses = images != null ? images.stream()
+                    .filter(img -> img != null)
                     .map(img -> new RoomImageResponse(
                             img.getId() != null ? img.getId().getMostSignificantBits() : null,
                             img.getImageUrl(),
                             img.isPrimary()
                     ))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList()) : new ArrayList<>();
             return new RoomImagesResponse(imageResponses);
         } catch (RuntimeException e) {
             // Lỗi không tìm thấy phòng
@@ -189,26 +193,33 @@ public class RoomService {
         Room savedRoom = roomRepository.save(room); // Save first to get ID
 
         // Step 2: Process List<String> to RoomImage
-        List<RoomImage> savedImages = request.getImages().stream()
-                .map(url -> {
-                    RoomImage image = new RoomImage();
-                    image.setImageUrl(url);
-                    image.setPrimary(false);
-                    image.setRoom(savedRoom); // Room now has ID
-                    return roomImageRepository.save(image);
-                })
-                .collect(Collectors.toList());
-        savedRoom.setImages(savedImages);
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<RoomImage> savedImages = request.getImages().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(url -> {
+                        RoomImage image = new RoomImage();
+                        image.setImageUrl(url);
+                        image.setPrimary(false);
+                        image.setRoom(savedRoom); // Room now has ID
+                        return roomImageRepository.save(image);
+                    })
+                    .collect(Collectors.toList());
+            savedRoom.setImages(savedImages);
+        }
 
         // Step 3: Process amenities from AmenityRequest to MasterAmenity
-        List<MasterAmenity> savedAmenities = request.getAmenities().stream()
-                .map(dto -> {
-                    MasterAmenity amenity = new MasterAmenity();
-                    amenity.setName(dto.getName());
-                    amenity.setIconUrl(dto.getIcon());
-                    return masterAmenityRepository.save(amenity);
-                })
-                .collect(Collectors.toList());
+        List<MasterAmenity> savedAmenities = new ArrayList<>();
+        if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
+            savedAmenities = request.getAmenities().stream()
+                    .filter(dto -> dto != null)
+                    .map(dto -> {
+                        MasterAmenity amenity = new MasterAmenity();
+                        amenity.setName(dto.getName());
+                        amenity.setIconUrl(dto.getIcon());
+                        return masterAmenityRepository.save(amenity);
+                    })
+                    .collect(Collectors.toList());
+        }
         savedRoom.setAmenities(savedAmenities);
 
         // Step 4: Save Room again with images and amenities
@@ -252,40 +263,74 @@ public class RoomService {
             throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
         }
 
-        // Update basic information
-        room.setTitle(request.getTitle());
-        room.setDescription(request.getDescription());
-        room.setRoomType(request.getRoomType());
-        room.setStreetAddress(request.getStreetAddress());
-        room.setCity(request.getCity());
-        room.setDistrict(request.getDistrict());
-        room.setWard(request.getWard());
-        room.setLatitude(request.getLatitude());
-        room.setLongitude(request.getLongitude());
-        room.setPricePerMonth(request.getPricePerMonth());
-        room.setAreaSqm(request.getAreaSqm());
-        room.setStatus(request.getStatus());
+        // Update basic information manually to avoid null issues
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+            room.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            room.setDescription(request.getDescription());
+        }
+        if (request.getRoomType() != null) {
+            room.setRoomType(request.getRoomType());
+        }
+        if (request.getStreetAddress() != null) {
+            room.setStreetAddress(request.getStreetAddress());
+        }
+        if (request.getCity() != null) {
+            room.setCity(request.getCity());
+        }
+        if (request.getDistrict() != null) {
+            room.setDistrict(request.getDistrict());
+        }
+        if (request.getWard() != null) {
+            room.setWard(request.getWard());
+        }
+        if (request.getLatitude() != null) {
+            room.setLatitude(request.getLatitude());
+        }
+        if (request.getLongitude() != null) {
+            room.setLongitude(request.getLongitude());
+        }
+        if (request.getPricePerMonth() != null) {
+            room.setPricePerMonth(request.getPricePerMonth());
+        }
+        if (request.getAreaSqm() != null) {
+            room.setAreaSqm(request.getAreaSqm());
+        }
+        if (request.getStatus() != null) {
+            room.setStatus(request.getStatus());
+        }
+        
+        // Always update timestamp
         room.setUpdatedAt(LocalDateTime.now());
 
         // Process List<String> to RoomImage
-        List<RoomImage> savedImages = request.getImages().stream()
-                .map(url -> {
-                    RoomImage image = new RoomImage();
-                    image.setImageUrl(url);
-                    image.setPrimary(false);
-                    image.setRoom(room);
-                    return roomImageRepository.save(image);
-                })
-                .collect(Collectors.toList());
-        room.setImages(savedImages);
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<RoomImage> savedImages = request.getImages().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(url -> {
+                        RoomImage image = new RoomImage();
+                        image.setImageUrl(url);
+                        image.setPrimary(false);
+                        image.setRoom(room);
+                        return roomImageRepository.save(image);
+                    })
+                    .collect(Collectors.toList());
+            room.setImages(savedImages);
+        }
 
         // Process amenities from AmenityRequest to Amenity
         List<MasterAmenity> savedAmenities = new ArrayList<>();
-        for (MasterAmenityRequest amenityRequest : request.getAmenities()) {
-            MasterAmenity amenity = new MasterAmenity();
-            amenity.setName(amenityRequest.getName());
-            amenity.setIconUrl(amenityRequest.getIcon());
-            savedAmenities.add(masterAmenityRepository.save(amenity));
+        if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
+            savedAmenities = request.getAmenities().stream()
+                    .filter(amenityRequest -> amenityRequest != null)
+                    .map(amenityRequest -> {
+                        MasterAmenity amenity = new MasterAmenity();
+                        amenity.setName(amenityRequest.getName());
+                        amenity.setIconUrl(amenityRequest.getIcon());
+                        return masterAmenityRepository.save(amenity);
+                    })
+                    .collect(Collectors.toList());
         }
         room.setAmenities(savedAmenities);
 

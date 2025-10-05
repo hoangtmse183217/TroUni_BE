@@ -33,7 +33,7 @@ public class TroUniApplication implements CommandLineRunner {
 		
 		// Tạo tài khoản student mặc định
 		createDefaultStudent();
-		
+
 		// Tạo tài khoản landlord mặc định
 		createDefaultLandlord();
 	}
@@ -71,15 +71,18 @@ public class TroUniApplication implements CommandLineRunner {
 			student.setGoogleAccount(false);
 			student.setCreatedAt(LocalDateTime.now());
 			student.setUpdatedAt(LocalDateTime.now());
-			
+
+			userRepository.save(student);
+
 			// Tạo profile cho student
 			Profile studentProfile = new Profile();
+			studentProfile.setUser(student);
 			studentProfile.setFullName("Default Student");
 			studentProfile.setPhoneNumber("0123456789");
 			studentProfile.setGender("Male");
 			studentProfile.setBadge("Student");
 			student.setProfile(studentProfile);
-			
+
 			userRepository.save(student);
 			System.out.println("=== STUDENT ACCOUNT CREATED ===");
 			System.out.println("Username: student");
@@ -102,9 +105,12 @@ public class TroUniApplication implements CommandLineRunner {
 			landlord.setGoogleAccount(false);
 			landlord.setCreatedAt(LocalDateTime.now());
 			landlord.setUpdatedAt(LocalDateTime.now());
+
+			userRepository.save(landlord);
 			
 			// Tạo profile cho landlord
 			Profile landlordProfile = new Profile();
+			landlordProfile.setUser(landlord);
 			landlordProfile.setFullName("Default Landlord");
 			landlordProfile.setPhoneNumber("0987654321");
 			landlordProfile.setGender("Female");

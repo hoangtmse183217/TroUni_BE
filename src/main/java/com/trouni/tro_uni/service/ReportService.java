@@ -5,6 +5,7 @@ import com.trouni.tro_uni.dto.response.ReportResponse;
 import com.trouni.tro_uni.dto.response.ReportedContentResponse;
 import com.trouni.tro_uni.entity.Report;
 import com.trouni.tro_uni.entity.User;
+import com.trouni.tro_uni.mapper.ReportMapper;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
@@ -18,8 +19,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,6 +45,7 @@ public class ReportService {
     private final RoomRepository roomRepository;
     private final RoommatePostRepository roommatePostRepository;
     private final ReviewRepository reviewRepository;
+    private final ReportMapper reportMapper;
     
     private static final List<String> VALID_CONTENT_TYPES = Arrays.asList(
             "room", "user", "roommate_post", "review"
@@ -69,19 +73,17 @@ public class ReportService {
         List<Report> existingReports = reportRepository.findByReportedContentTypeAndReportedContentId(
                 request.getReportedContentType(), request.getReportedContentId());
         
-        boolean alreadyReported = existingReports.stream()
-                .anyMatch(report -> report.getReporter().getId().equals(currentUser.getId()));
+        boolean alreadyReported = existingReports != null && existingReports.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(report -> report.getReporter() != null && 
+                        report.getReporter().getId().equals(currentUser.getId()));
         
         if (alreadyReported) {
             throw new AppException(GeneralErrorCode.RESOURCE_ALREADY_EXISTS,
                     "You have already reported this content");
         }
         
-        Report report = new Report();
-        report.setReporter(currentUser);
-        report.setReportedContentType(request.getReportedContentType());
-        report.setReportedContentId(request.getReportedContentId());
-        report.setReason(request.getReason());
+        Report report = reportMapper.toEntity(request, currentUser);
         report.setStatus("pending");
         
         report = reportRepository.save(report);
@@ -103,14 +105,15 @@ public class ReportService {
         User currentUser = getCurrentUser();
         List<Report> reports = reportRepository.findByReporter(currentUser);
         
-        return reports.stream()
+        return reports != null ? reports.stream()
+                .filter(Objects::nonNull)
                 .map(report -> {
                     ReportResponse response = ReportResponse.fromReport(report);
                     response.setReportedContent(getReportedContentInfo(
                             report.getReportedContentType(), report.getReportedContentId()));
                     return response;
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
     
     /**
@@ -165,7 +168,7 @@ public class ReportService {
                     "Invalid status. Valid statuses: " + String.join(", ", validStatuses));
         }
         
-        report.setStatus(newStatus);
+        reportMapper.updateStatus(newStatus, report);
         report = reportRepository.save(report);
         
         log.info("User {} updated report {} status to {}", 
