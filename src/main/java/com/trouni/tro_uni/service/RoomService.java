@@ -11,9 +11,11 @@ import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
+import com.trouni.tro_uni.exception.errorcode.UserErrorCode;
 import com.trouni.tro_uni.repository.MasterAmenityRepository;
 import com.trouni.tro_uni.repository.RoomImageRepository;
 import com.trouni.tro_uni.repository.RoomRepository;
+import com.trouni.tro_uni.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -34,6 +36,7 @@ public class RoomService {
     MasterAmenityRepository masterAmenityRepository;
     RoomImageRepository roomImageRepository;
     RoomRepository roomRepository;
+    UserRepository userRepository;
 
     /**
      * Create a new room listing
@@ -79,19 +82,19 @@ public class RoomService {
         room.setImages(images);
 
         // Create Amenity
-        List<MasterAmenityRequest> amenityDtos = Optional.ofNullable(request.getAmenities()).orElse(Collections.emptyList());
-        List<MasterAmenity> amenities = amenityDtos.stream()
-                .map(dto -> masterAmenityRepository
-                        .findByName(dto.getName())
-                        .orElseGet(() -> {
-                            MasterAmenity newAmenity = new MasterAmenity();
-                            newAmenity.setName(dto.getName());
-                            newAmenity.setIconUrl(dto.getIcon());
-                            return masterAmenityRepository.save(newAmenity);
-                        })
-                )
-                .collect(Collectors.toList());
-        room.setAmenities(amenities);
+//        List<MasterAmenityRequest> amenityDtos = Optional.ofNullable(request.getAmenities()).orElse(Collections.emptyList());
+//        List<MasterAmenity> amenities = amenityDtos.stream()
+//                .map(dto -> masterAmenityRepository
+//                        .findByName(dto.getName())
+//                        .orElseGet(() -> {
+//                            MasterAmenity newAmenity = new MasterAmenity();
+//                            newAmenity.setName(dto.getName());
+//                            newAmenity.setIconUrl(dto.getIcon());
+//                            return masterAmenityRepository.save(newAmenity);
+//                        })
+//                )
+//                .collect(Collectors.toList());
+//        room.setAmenities(amenities);
 
         Room savedRoom = roomRepository.save(room);
         log.info("Created new room with ID: {} by user: {}", savedRoom.getId(), currentUser.getUsername());
@@ -116,6 +119,29 @@ public class RoomService {
 
         log.info("Retrieved room details for ID: {}", roomId);
         return RoomResponse.fromRoom(room);
+    }
+
+    /**
+     * Get all rooms owned by a specific user (without pagination)
+     *
+     * @param userId - UUID of the user (landlord)
+     * @return List<RoomResponse> - All rooms of the user
+     * @throws AppException - When user is not found
+     */
+    public List<RoomResponse> getRoomsByUserId(UUID userId) {
+        // Verify user exists
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(UserErrorCode.PROFILE_NOT_FOUND));
+
+        // Get all rooms by owner
+        List<Room> rooms = roomRepository.findAll().stream()
+                .filter(room -> room.getOwner().getId().equals(userId))
+                .toList();
+
+        log.info("Retrieved {} rooms for user: {}", rooms.size(), user.getUsername());
+        return rooms.stream()
+                .map(RoomResponse::fromRoom)
+                .collect(Collectors.toList());
     }
 
     /**

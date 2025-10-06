@@ -53,6 +53,13 @@ public class RoomController {
         return ResponseEntity.ok(roomService.getRoomById(roomId));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<RoomResponse>> getRoomByUserId(
+            @PathVariable UUID userId
+    ) {
+        return ResponseEntity.ok(roomService.getRoomsByUserId(userId));
+    }
+
     /**
      * Update room details
      *
