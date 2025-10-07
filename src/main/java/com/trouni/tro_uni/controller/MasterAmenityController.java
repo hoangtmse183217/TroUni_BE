@@ -29,17 +29,15 @@ public class MasterAmenityController {
     /**
      * Create a new master amenity.
      * (Typically restricted to Admin users)
-     * @param roomId - The room ID to associate the amenity with
      * @param request - The details of the amenity to create.
      * @return ResponseEntity<?>
      */
-    @PostMapping("/{roomId}")
+    @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createMasterAmenity(
-            @PathVariable UUID roomId,
             @Valid @RequestBody MasterAmenityRequest request) {
         try {
-            MasterAmenityResponse response = masterAmenityService.createMasterAmenity(roomId, request);
+            MasterAmenityResponse response = masterAmenityService.createMasterAmenity(request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Master amenity created successfully", response));
         } catch (Exception e) {
@@ -50,14 +48,31 @@ public class MasterAmenityController {
 
     /**
      * Get all master amenities.
-     * @param amenityId - The amenity ID to get amenities for
      * @return ResponseEntity<?>
      */
-    @GetMapping("/{amenityId}")
-    public ResponseEntity<?> getAllMasterAmenities(@PathVariable UUID amenityId) {
+    @GetMapping
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<?> getAllMasterAmenities() {
         try {
-            List<MasterAmenityResponse> amenities = masterAmenityService.getMasterAmenities(amenityId);
+            List<MasterAmenityResponse> amenities = masterAmenityService.getAllMasterAmenities();
             return ResponseEntity.ok(ApiResponse.success("Master amenities retrieved successfully", amenities));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_MASTER_AMENITIES_ERROR", "Failed to get master amenities: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get master amenities for a specific room.
+     * @param roomId - The room ID to get amenities for
+     * @return ResponseEntity<?>
+     */
+    @GetMapping("/room/{roomId}")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<?> getMasterAmenitiesByRoom(@PathVariable UUID roomId) {
+        try {
+            List<MasterAmenityResponse> amenities = masterAmenityService.getMasterAmenities(roomId);
+            return ResponseEntity.ok(ApiResponse.success("Master amenities for room retrieved successfully", amenities));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("GET_MASTER_AMENITIES_ERROR", "Failed to get master amenities: " + e.getMessage()));

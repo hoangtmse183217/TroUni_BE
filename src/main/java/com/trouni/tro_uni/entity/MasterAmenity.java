@@ -23,7 +23,7 @@ public class MasterAmenity {
     private UUID id;
 
     @Nationalized
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 100, unique = true)
     private String name; // e.g., Wi-Fi, Air Conditioner, Parking
     
     @Nationalized
@@ -32,6 +32,9 @@ public class MasterAmenity {
     
     @Column(name = "icon_url")
     private String iconUrl;
+    
+    @Column(name = "is_active")
+    private Boolean active = true;
     
     // Many-to-many relationship with Room
     @ManyToMany(mappedBy = "amenities")

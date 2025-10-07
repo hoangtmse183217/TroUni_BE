@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * RoommatePostService - Service xử lý các thao tác liên quan đến bài đăng tìm roommate
- * 
+
  * Chức năng chính:
  * - Tạo, sửa, xóa bài đăng tìm roommate
  * - Lấy danh sách bài đăng
@@ -48,11 +48,6 @@ public class RoommatePostService {
     @Transactional
     public RoommatePostResponse createRoommatePost(CreateRoommatePostRequest request) {
         User currentUser = getCurrentUser();
-        
-        // Kiểm tra user có role STUDENT không
-        if (!currentUser.getRole().equals(UserRole.STUDENT)) {
-            throw new AppException(GeneralErrorCode.ACCESS_DENIED, "Only students can create roommate posts");
-        }
         
         // Validate budget range
         if (request.getBudgetMin() != null && request.getBudgetMax() != null && 
@@ -85,7 +80,7 @@ public class RoommatePostService {
                 .orElseThrow(() -> new AppException(GeneralErrorCode.RESOURCE_NOT_FOUND));
         
         // Kiểm tra quyền sở hữu
-        if (!post.getAuthor().getId().equals(currentUser.getId())) {
+        if (!post.getAuthor().getId().equals(currentUser.getId()) && getCurrentUser().getRole().equals(UserRole.ADMIN)) {
             throw new AppException(GeneralErrorCode.ACCESS_DENIED, "You can only update your own posts");
         }
         
@@ -142,7 +137,7 @@ public class RoommatePostService {
         Page<RoommatePost> posts;
         
         if (status != null && !status.isEmpty()) {
-            posts = roommatePostRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+            posts = roommatePostRepository.findByStatus(status, pageable);
         } else {
             posts = roommatePostRepository.findAll(pageable);
         }

@@ -21,7 +21,7 @@ import java.util.UUID;
 
 /**
  * ReviewController - Controller to handle APIs related to room reviews.
- *
+
  * Main functions:
  * - Create a new review for a room.
  * - Get all reviews for a specific room.
@@ -77,6 +77,7 @@ public class ReviewController {
      * @return ResponseEntity - Response containing the list of reviews.
      */
     @GetMapping("/{roomId}")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getReviewsByRoom(@PathVariable UUID roomId) {
         try {
             List<ReviewResponse> reviews = reviewService.getReviewsByRoom(roomId);

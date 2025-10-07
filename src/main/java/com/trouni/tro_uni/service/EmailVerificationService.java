@@ -154,10 +154,11 @@ public class EmailVerificationService {
             EmailVerification savedVerification = emailVerificationRepository.save(verification);
 
             // Gửi email mới
+
             emailService.sendVerificationEmail(
                     email,
                     newCode,
-                    verification.getUser().getUsername()
+                    verification.getUsername()
             );
 
             log.info("Verification code resent for: {}", email);
@@ -380,6 +381,9 @@ public class EmailVerificationService {
             }
 
             // Trả về thông tin từ token
+            if (reset.getUser() == null) {
+                throw new AppException(AuthenticationErrorCode.TOKEN_INVALID);
+            }
             return Map.of(
                 "userId", reset.getUser().getId().toString(),
                 "email", reset.getEmail(),

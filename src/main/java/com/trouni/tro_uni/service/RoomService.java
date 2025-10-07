@@ -1,7 +1,6 @@
 package com.trouni.tro_uni.service;
 
 import com.trouni.tro_uni.dto.request.RoomSearchRequest;
-import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
 import com.trouni.tro_uni.dto.request.room.RoomRequest;
 import com.trouni.tro_uni.dto.request.room.UpdateRoomRequest;
 import com.trouni.tro_uni.dto.response.RoomListItemResponse;
@@ -13,9 +12,9 @@ import com.trouni.tro_uni.entity.MasterAmenity;
 import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.RoomImage;
 import com.trouni.tro_uni.entity.User;
-import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
+import com.trouni.tro_uni.exception.errorcode.MasterAmenityErrorCode;
 import com.trouni.tro_uni.mapper.RoomMapper;
 import com.trouni.tro_uni.repository.MasterAmenityRepository;
 import com.trouni.tro_uni.repository.RoomRepository;
@@ -26,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -146,9 +146,6 @@ public class RoomService {
      * @throws AppException - If user is not authorized as landlord
      */
     public RoomResponse createRoom(User currentUser, RoomRequest request) {
-        if (currentUser.getRole() != UserRole.LANDLORD) {
-            throw new AppException(RoomErrorCode.NOT_LANDLORD);
-        }
 
         // Step 1: Create Room and save first to get ID
         Room room = Room.builder()
@@ -190,13 +187,8 @@ public class RoomService {
         List<MasterAmenity> savedAmenities = new ArrayList<>();
         if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
             savedAmenities = request.getAmenities().stream()
-                    .filter(dto -> dto != null)
-                    .map(dto -> {
-                        MasterAmenity amenity = new MasterAmenity();
-                        amenity.setName(dto.getName());
-                        amenity.setIconUrl(dto.getIcon());
-                        return masterAmenityRepository.save(amenity);
-                    })
+                    .filter(dto -> dto != null && dto.getName() != null && !dto.getName().trim().isEmpty())
+                    .map(dto -> getOrCreateMasterAmenity(dto.getName(), dto.getIcon()))
                     .collect(Collectors.toList());
         }
         savedRoom.setAmenities(savedAmenities);
@@ -298,17 +290,12 @@ public class RoomService {
             room.setImages(savedImages);
         }
 
-        // Process amenities from AmenityRequest to Amenity
+        // Process amenities from AmenityRequest to MasterAmenity
         List<MasterAmenity> savedAmenities = new ArrayList<>();
         if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
             savedAmenities = request.getAmenities().stream()
-                    .filter(amenityRequest -> amenityRequest != null)
-                    .map(amenityRequest -> {
-                        MasterAmenity amenity = new MasterAmenity();
-                        amenity.setName(amenityRequest.getName());
-                        amenity.setIconUrl(amenityRequest.getIcon());
-                        return masterAmenityRepository.save(amenity);
-                    })
+                    .filter(amenityRequest -> amenityRequest != null && amenityRequest.getName() != null && !amenityRequest.getName().trim().isEmpty())
+                    .map(amenityRequest -> getOrCreateMasterAmenity(amenityRequest.getName(), amenityRequest.getIcon()))
                     .collect(Collectors.toList());
         }
         room.setAmenities(savedAmenities);
@@ -359,6 +346,37 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
+    // ================== HELPER METHODS ==================
+
+    /**
+     * Get or create MasterAmenity by name to avoid duplicates
+     */
+    private MasterAmenity getOrCreateMasterAmenity(String name, String iconUrl) {
+        String amenityName = name.trim();
+        
+        // Check if amenity already exists by name
+        Optional<MasterAmenity> existingAmenity = masterAmenityRepository.findByName(amenityName);
+        if (existingAmenity.isPresent()) {
+            log.info("Using existing MasterAmenity: {}", amenityName);
+            return existingAmenity.get();
+        } else {
+            // Create new amenity only if it doesn't exist
+            try {
+                log.info("Creating new MasterAmenity: {}", amenityName);
+                MasterAmenity amenity = new MasterAmenity();
+                amenity.setName(amenityName);
+                amenity.setIconUrl(iconUrl);
+                amenity.setActive(true);
+                return masterAmenityRepository.save(amenity);
+            } catch (DataIntegrityViolationException e) {
+                // Handle case where amenity was created by another thread
+                log.warn("MasterAmenity '{}' was created by another process, retrieving existing one", amenityName);
+                return masterAmenityRepository.findByName(amenityName)
+                        .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND, "Failed to create or find MasterAmenity: " + amenityName));
+            }
+        }
+    }
+
     // ================== MAPPING METHODS ==================
 
     private RoomListItemResponse toRoomListItemResponse(Room room) {
@@ -394,7 +412,7 @@ public class RoomService {
                     .filter(RoomImage::isPrimary)
                     .findFirst()
                     .map(RoomImage::getImageUrl)
-                    .orElse(room.getImages().get(0).getImageUrl());
+                    .orElse(room.getImages().getFirst().getImageUrl());
         }
         return null;
     }

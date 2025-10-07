@@ -43,6 +43,7 @@ public class ProfileController {
      * @return ResponseEntity - Response chứa thông tin profile
      */
     @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('STUDENT', 'LANDLORD', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<ProfileResponse>> getCurrentUserProfile() {
         User currentUser = authService.getCurrentUser();
         ProfileResponse profile = profileService.getCurrentUserProfile(currentUser);
@@ -58,6 +59,7 @@ public class ProfileController {
      * @return ResponseEntity - Response chứa thông tin profile
      */
     @GetMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ProfileResponse>> getProfileByUserId(@PathVariable UUID userId) {
         try {
             ProfileResponse profile = profileService.getProfileByUserId(userId);

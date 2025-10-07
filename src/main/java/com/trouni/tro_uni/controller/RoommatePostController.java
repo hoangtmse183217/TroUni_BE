@@ -22,7 +22,7 @@ import java.util.UUID;
 
 /**
  * RoommatePostController - Controller xử lý các API bài đăng tìm roommate
- * 
+
  * Chức năng chính:
  * - CRUD operations cho bài đăng tìm roommate
  * - Tìm kiếm và lọc bài đăng
@@ -32,7 +32,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/roommate-posts")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class RoommatePostController {
     
     private final RoommatePostService roommatePostService;
@@ -45,7 +44,7 @@ public class RoommatePostController {
      * @return ResponseEntity - Bài đăng đã tạo
      */
     @PostMapping
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> createRoommatePost(@Valid @RequestBody CreateRoommatePostRequest request) {
         try {
             RoommatePostResponse post = roommatePostService.createRoommatePost(request);
@@ -66,7 +65,7 @@ public class RoommatePostController {
      * @return ResponseEntity - Bài đăng đã cập nhật
      */
     @PutMapping("/{postId}")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> updateRoommatePost(@PathVariable UUID postId, 
                                                @Valid @RequestBody UpdateRoommatePostRequest request) {
         try {
@@ -107,6 +106,7 @@ public class RoommatePostController {
      * @return ResponseEntity - Thông tin chi tiết bài đăng
      */
     @GetMapping("/{postId}")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> getRoommatePost(@PathVariable UUID postId) {
         try {
             RoommatePostResponse post = roommatePostService.getRoommatePost(postId);
@@ -128,6 +128,7 @@ public class RoommatePostController {
      * @return ResponseEntity - Danh sách bài đăng có phân trang
      */
     @GetMapping
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> getRoommatePosts(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
@@ -152,7 +153,7 @@ public class RoommatePostController {
      * @return ResponseEntity - Danh sách bài đăng của user
      */
     @GetMapping("/my-posts")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> getCurrentUserPosts() {
         try {
             List<RoommatePostResponse> posts = roommatePostService.getCurrentUserPosts();
@@ -175,6 +176,7 @@ public class RoommatePostController {
      * @return ResponseEntity - Kết quả tìm kiếm
      */
     @GetMapping("/search/budget")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> searchByBudget(
             @RequestParam BigDecimal minBudget,
             @RequestParam BigDecimal maxBudget,
@@ -203,6 +205,7 @@ public class RoommatePostController {
      * @return ResponseEntity - Kết quả tìm kiếm
      */
     @GetMapping("/search/location")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> searchByLocation(
             @RequestParam String location,
             @RequestParam(defaultValue = "0") int page,

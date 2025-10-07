@@ -62,6 +62,11 @@ public class AppException extends RuntimeException {
         this.generalErrorCode = generalErrorCode;
     }
 
+    public AppException(MasterAmenityErrorCode masterAmenityErrorCode, String customMessage) {
+        super(customMessage);
+        this.masterAmenityErrorCode = masterAmenityErrorCode;
+    }
+
     // Helper method để lấy code
     public String getErrorCode() {
         if (tokenErrorCode != null) {

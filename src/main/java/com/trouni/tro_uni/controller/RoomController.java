@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/rooms")
+@RequestMapping("/rooms")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomController {
@@ -184,6 +184,7 @@ public class RoomController {
      * @return ResponseEntity<?>
      */
     @GetMapping("/paginated")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<?> getAllRoomsPaginated(Pageable pageable) {
         try {
             Page<RoomResponse> rooms = roomService.getAllRooms(pageable);
@@ -200,6 +201,7 @@ public class RoomController {
      * @return ResponseEntity<?>
      */
     @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<?> getAllRooms() {
         try {
             List<RoomResponse> rooms = roomService.getAllRooms();

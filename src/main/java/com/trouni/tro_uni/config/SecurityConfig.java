@@ -159,13 +159,17 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",    // Swagger API docs
                                 "/swagger-ui/**",     // Swagger UI
                                 "/swagger-ui.html",   // Swagger UI HTML
-                                "/api/rooms/search",  // Room search (public)
-                                "/api/rooms/public",  // Public room listing
-                                "/api/rooms/{id}/details", // Room details (public)
-                                "/api/rooms/{id}/images",  // Room images (public)
-                                "/api/rooms/{id}/summary", // Room summary (public)
-                                "/reviews/{roomId}",  // Get reviews by room (public)
-                                "/master-amenities/{id}" // Get master amenities (public)
+                                "/rooms/search",  // Room search (public)
+                                "/rooms",         // Public room listing
+                                "/rooms/*/details", // Room details (public)
+                                "/rooms/*/images",  // Room images (public)
+                                "/rooms/*/summary", // Room summary (public)
+                                "/reviews/*",         // Get reviews by room (public)
+                                "/master-amenities",  // Get all master amenities (public)
+                                "/master-amenities/room/*", // Get amenities by room (public)
+                                "/roommate-posts",    // Get roommate posts (public)
+                                "/roommate-posts/*",  // Get specific roommate post (public)
+                                "/roommate-posts/search/*" // Search roommate posts (public)
                         ).permitAll()
 
                         // Tất cả các endpoint khác cần authentication (sẽ được kiểm tra bởi @PreAuthorize)

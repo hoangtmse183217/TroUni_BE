@@ -57,6 +57,7 @@ public class RoomImageController {
      * @return ResponseEntity<?>
      */
     @GetMapping("/{roomId}")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> getRoomImages(
             @PathVariable UUID roomId
     ) {

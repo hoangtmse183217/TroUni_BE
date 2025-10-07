@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -32,11 +33,39 @@ public class MasterAmenityService {
     MasterAmenityRepository masterAmenityRepository;
 
     /**
-     * Creates a new master amenity with the provided details.
+     * Creates a new master amenity with the provided details (without room association).
      *
      * @param request The master amenity request containing name and icon URL
      * @return MasterAmenityResponse containing the created amenity details
      * @throws AppException if an amenity with the same name already exists
+     */
+    public MasterAmenityResponse createMasterAmenity(MasterAmenityRequest request) {
+        // Kiểm tra trùng tên
+        if (masterAmenityRepository.existsByName(request.getName())) {
+            throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
+        }
+
+        // Tạo tiện ích mới
+        MasterAmenity amenity = MasterAmenity.builder()
+                .name(request.getName())
+                .iconUrl(request.getIcon())
+                .active(true)
+                .build();
+
+        MasterAmenity savedAmenity = masterAmenityRepository.save(amenity);
+
+        log.info("Created new master amenity '{}' with ID: {}", savedAmenity.getName(), savedAmenity.getId());
+        return MasterAmenityResponse.fromMasterAmenity(savedAmenity);
+    }
+
+    /**
+     * Creates a new master amenity and associates it with a specific room.
+     * (Legacy method - kept for backward compatibility)
+     *
+     * @param roomId The room ID to associate the amenity with
+     * @param request The master amenity request containing name and icon URL
+     * @return MasterAmenityResponse containing the created amenity details
+     * @throws AppException if an amenity with the same name already exists or room not found
      */
     public MasterAmenityResponse createMasterAmenity(UUID roomId, MasterAmenityRequest request) {
         // Kiểm tra trùng tên
@@ -48,6 +77,7 @@ public class MasterAmenityService {
         MasterAmenity amenity = MasterAmenity.builder()
                 .name(request.getName())
                 .iconUrl(request.getIcon())
+                .active(true)
                 .build();
 
         MasterAmenity savedAmenity = masterAmenityRepository.save(amenity);
@@ -72,10 +102,10 @@ public class MasterAmenityService {
         log.info("Retrieving all master amenities");
         // Fetch all amenities and convert to response DTOs
         List<MasterAmenity> amenities = masterAmenityRepository.findAll();
-        return amenities != null ? amenities.stream()
-                .filter(amenity -> amenity != null)
-                .map(MasterAmenityResponse::fromMasterAmenity)
-                .collect(Collectors.toList()) : new ArrayList<>();
+        return amenities.stream()
+                        .filter(Objects::nonNull)
+                        .map(MasterAmenityResponse::fromMasterAmenity)
+                        .collect(Collectors.toList());
     }
 
     /**

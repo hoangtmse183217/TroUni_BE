@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * BookmarkService - Service xử lý các thao tác bookmark
- * 
+
  * Chức năng chính:
  * - Bookmark/unbookmark phòng
  * - Lấy danh sách phòng đã bookmark
@@ -89,7 +89,7 @@ public class BookmarkService {
      */
     public Page<BookmarkResponse> getUserBookmarks(Pageable pageable) {
         User currentUser = getCurrentUser();
-        Page<Bookmark> bookmarks = bookmarkRepository.findByUserOrderByCreatedAtDesc(currentUser, pageable);
+        Page<Bookmark> bookmarks = bookmarkRepository.findByUser(currentUser, pageable);
         
         return bookmarks.map(BookmarkResponse::fromBookmark);
     }
