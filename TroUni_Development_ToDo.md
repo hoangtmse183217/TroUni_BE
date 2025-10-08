@@ -25,17 +25,17 @@ A comprehensive platform for students to find accommodation and roommates with r
 ---
 
 ### 👤 **Phase 2: Guest User Features (Backend APIs)**
-- [ ] **Room Search & Filter APIs**
-  - [ ] Basic search API (location, price, area)
-  - [ ] Filter API for room types
-  - [ ] Search result pagination API
-  - [ ] Location-based search API (district/ward only)
+- ✅ **Room Search & Filter APIs**
+  - ✅ Basic search API (location, price, area)
+  - ✅ Filter API for room types
+  - ✅ Search result pagination API
+  - ✅ Location-based search API (district/ward only)
 
-- [ ] **Room Listing APIs**
-  - [ ] Public room listing endpoint
-  - [ ] Room summary information API
-  - [ ] Image serving endpoints
-  - [ ] Authentication check middleware
+- ✅ **Room Listing APIs**
+  - ✅ Public room listing endpoint
+  - ✅ Room summary information API
+  - ✅ Image serving endpoints
+  - ✅ Authentication check middleware
 
 ---
 
