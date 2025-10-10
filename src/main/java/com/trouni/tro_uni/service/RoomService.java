@@ -1,5 +1,6 @@
 package com.trouni.tro_uni.service;
 
+import com.trouni.tro_uni.dto.request.RoomSearchRequest;
 import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
 import com.trouni.tro_uni.dto.request.room.RoomRequest;
 import com.trouni.tro_uni.dto.request.room.UpdateRoomRequest;
@@ -45,16 +46,14 @@ import java.util.stream.Collectors;
 public class RoomService {
 
     @Autowired
-    private RoomRepository roomRepository;
+    RoomRepository roomRepository;
 
-    private final RoomMapper roomMapper;
+    RoomMapper roomMapper;
 
     @Autowired
-    private RoomImageRepository roomImageRepository;
+    RoomImageRepository roomImageRepository;
 
     MasterAmenityRepository masterAmenityRepository;
-    RoomImageRepository roomImageRepository;
-    RoomRepository roomRepository;
 
     /**
      * Create a new room listing
@@ -135,7 +134,25 @@ public class RoomService {
         roomRepository.save(room);
 
         log.info("Retrieved room details for ID: {}", roomId);
-        return RoomResponse.fromRoom(room);
+        return RoomResponse.fromRoom(room); // Truyền thêm roomRepository
+    }
+
+    /**
+     * Lấy danh sách ảnh của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về danh sách ảnh rỗng.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
+     */
+    @Transactional(readOnly = true)
+    public RoomImagesResponse getRoomImages(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Lấy danh sách ảnh trực tiếp từ đối tượng room đã được fetch
+        List<RoomImageResponse> imageResponses = room.getImages().stream()
+                .map(RoomImageResponse::fromRoomImage) // Dùng lại phương thức mapping của bạn
+                .collect(Collectors.toList());
+
+        return new RoomImagesResponse(imageResponses);
     }
 
     /**
@@ -198,6 +215,45 @@ public class RoomService {
         return RoomResponse.fromRoom(updatedRoom);
     }
 
+    /**
+     * Lấy tóm tắt thông tin của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về null.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
+     */
+    @Transactional(readOnly = true)
+    public RoomSummaryResponse getRoomSummary(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Kiểm tra xem phòng có public không
+        if (!"available".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND); // Coi như không tìm thấy
+        }
+
+        return toRoomSummaryResponse(room);
+    }
+
+    /**
+     * Get all rooms owned by a specific user
+     * <p>
+     *
+     * @param userId - UUID of the user/owner
+     * @return List<RoomResponse> - List of rooms owned by the user
+     * @throws AppException - When no rooms found for the user
+     */
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomByUserId(UUID userId) {
+        List<Room> rooms = roomRepository.findByOwnerId(userId);
+
+        if (rooms.isEmpty()) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
+        }
+
+        log.info("Retrieved {} rooms for user ID: {}", rooms.size(), userId);
+        return rooms.stream()
+                .map(RoomResponse::fromRoom)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Delete a room listing
@@ -268,9 +324,49 @@ public class RoomService {
                 // Handle case where amenity was created by another thread
                 log.warn("MasterAmenity '{}' was created by another process, retrieving existing one", amenityName);
                 return masterAmenityRepository.findByName(amenityName)
-                        .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND, "Failed to create or find MasterAmenity: " + amenityName));
+                        .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
             }
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomListItemResponse> searchRooms(RoomSearchRequest request) {
+
+        String status = "available";
+
+        BigDecimal minPrice = request.getMinPrice() != null ? BigDecimal.valueOf(request.getMinPrice()) : null;
+        BigDecimal maxPrice = request.getMaxPrice() != null ? BigDecimal.valueOf(request.getMaxPrice()) : null;
+        BigDecimal minArea = request.getMinArea() != null ? BigDecimal.valueOf(request.getMinArea()) : null;
+        BigDecimal maxArea = request.getMaxArea() != null ? BigDecimal.valueOf(request.getMaxArea()) : null;
+
+        // Sử dụng trực tiếp các trường từ request, không cần xử lý chuỗi nữa
+        List<Room> foundRooms = roomRepository.searchAndFilter(
+                status,
+                request.getCity(),
+                request.getDistrict(),
+                request.getWard(),
+                minPrice,
+                maxPrice,
+                minArea,
+                maxArea,
+                request.getRoomType()
+        );
+
+        return foundRooms.stream()
+                .map(this::toRoomListItemResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all public rooms
+     */
+    @Transactional(readOnly = true)
+    public List<RoomListItemResponse> getPublicRooms() {
+        // Chỉ lấy các phòng có status "available" từ database
+        List<Room> publicRooms = roomRepository.findByStatus("available");
+        return publicRooms.stream()
+                .map(this::toRoomListItemResponse)
+                .collect(Collectors.toList());
     }
 
     // ================== MAPPING METHODS ==================

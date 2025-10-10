@@ -169,7 +169,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",     // Swagger UI
                                 "/swagger-ui.html",   // Swagger UI HTML
                                 "/rooms/search",  // Room search (public)
-                                "/rooms",         // Public room listing
+                                "/rooms/**",         // Public room listing
                                 "/rooms/*/details", // Room details (public)
                                 "/rooms/*/images",  // Room images (public)
                                 "/rooms/*/summary", // Room summary (public)

@@ -16,10 +16,11 @@ public class AppException extends RuntimeException {
     private RoomErrorCode roomErrorCode;
     private ReviewErrorCode reviewErrorCode;
     private MasterAmenityErrorCode masterAmenityErrorCode;
-    private BookmarkErrorCode bookmarkErrorCode;
+//    private BookmarkErrorCode bookmarkErrorCode;
     private SubscriptionErrorCode subscriptionErrorCode;
     private PaymentErrorCode paymentErrorCode;
-    private UserErrorCode userErrorCode;
+    private PackageErrorCode packageErrorCode;
+//    private UserErrorCode userErrorCode;
 
     public AppException(TokenErrorCode tokenErrorCode) {
         super(tokenErrorCode.getMessage());
@@ -40,15 +41,35 @@ public class AppException extends RuntimeException {
         super(roomErrorCode.getMessage());
         this.roomErrorCode = roomErrorCode;
     }
-     public AppException(MasterAmenityErrorCode masterAmenityErrorCode) {
+
+    public AppException(MasterAmenityErrorCode masterAmenityErrorCode) {
         super(masterAmenityErrorCode.getMessage());
         this.masterAmenityErrorCode = masterAmenityErrorCode;
     }
 
-
     public AppException(ReviewErrorCode reviewErrorCode) {
         super(reviewErrorCode.getMessage());
-         this.reviewErrorCode = reviewErrorCode;
+        this.reviewErrorCode = reviewErrorCode;
+    }
+
+    public AppException(SubscriptionErrorCode subscriptionErrorCode) {
+        super(subscriptionErrorCode.getMessage());
+        this.subscriptionErrorCode = subscriptionErrorCode;
+    }
+
+    public AppException(PaymentErrorCode paymentErrorCode) {
+        super(paymentErrorCode.getMessage());
+        this.paymentErrorCode = paymentErrorCode;
+    }
+
+    public AppException(PackageErrorCode packageErrorCode) {
+        super(packageErrorCode.getMessage());
+        this.packageErrorCode = packageErrorCode;
+    }
+
+    public AppException(GeneralErrorCode generalErrorCode, String customMessage) {
+        super(customMessage);
+        this.generalErrorCode = generalErrorCode;
     }
 
     // Helper method để lấy code
@@ -65,14 +86,11 @@ public class AppException extends RuntimeException {
         if (roomErrorCode != null) {
             return roomErrorCode.getCode();
         }
-         if (masterAmenityErrorCode != null){
+        if (masterAmenityErrorCode != null){
             return masterAmenityErrorCode.getCode();
         }
         if (reviewErrorCode != null){
             return reviewErrorCode.getCode();
-        }
-        if (bookmarkErrorCode != null) {
-            return bookmarkErrorCode.getCode();
         }
         if (subscriptionErrorCode != null) {
             return subscriptionErrorCode.getCode();
@@ -80,9 +98,10 @@ public class AppException extends RuntimeException {
         if (paymentErrorCode != null) {
             return paymentErrorCode.getCode();
         }
-        if (userErrorCode != null) {
-            return userErrorCode.getCode();
+        if (packageErrorCode != null) {
+            return packageErrorCode.getCode();
         }
+
         return "UNKNOWN_ERROR";
     }
 
@@ -112,6 +131,16 @@ public class AppException extends RuntimeException {
         if (reviewErrorCode != null) {
             return reviewErrorCode.getMessage();
         }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getMessage();
+        }
+        if (paymentErrorCode != null) {
+            return paymentErrorCode.getMessage();
+        }
+        if (packageErrorCode != null) {
+            return packageErrorCode.getMessage();
+        }
+
         return customMessage != null ? customMessage : "Unknown error occurred";
     }
 
@@ -135,6 +164,16 @@ public class AppException extends RuntimeException {
         if (reviewErrorCode != null) {
             return reviewErrorCode.getStatusCode();
         }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getStatusCode();
+        }
+        if (paymentErrorCode != null) {
+            return paymentErrorCode.getStatusCode();
+        }
+        if (packageErrorCode != null) {
+            return packageErrorCode.getStatusCode();
+        }
+
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 }

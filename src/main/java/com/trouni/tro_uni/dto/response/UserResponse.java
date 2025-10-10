@@ -1,8 +1,10 @@
 package com.trouni.tro_uni.dto.response;
 
+import com.trouni.tro_uni.entity.Profile;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.enums.AccountStatus;
+import com.trouni.tro_uni.repository.RoomRepository;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,13 +14,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * UserResponse - DTO cho response thông tin user
- * <p>
- * Chức năng chính:
- * - Trả về thông tin user an toàn (không có password)
- * - Sử dụng trong các API trả về thông tin user
- * - Có thể customize fields cần trả về
- * <p>
+ * UserResponse - DTO for user information response.
+ *
  * @author TroUni Team
  * @version 1.0
  */
@@ -27,7 +24,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
-    
+
     private UUID id;
     private String username;
     private String email;
@@ -38,12 +35,18 @@ public class UserResponse {
     private AccountStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
+
+    private ProfileResponse profile;
+
+
+    private Integer totalRooms;
+
     /**
-     * Tạo UserResponse từ User entity
-     * <p>
-     * @param user - User entity
-     * @return UserResponse - Response DTO
+     * Creates a basic UserResponse from a User entity.
+     *
+     * @param user The User entity.
+     * @return A UserResponse DTO.
      */
     public static UserResponse fromUser(User user) {
         return UserResponse.builder()
@@ -52,12 +55,14 @@ public class UserResponse {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .phoneVerified(user.isPhoneVerified())
-                .idVerificationStatus(user.getIdVerificationStatus() != null ? 
-                    user.getIdVerificationStatus().toString() : null)
+                .idVerificationStatus(user.getIdVerificationStatus() != null ?
+                        user.getIdVerificationStatus().toString() : null)
                 .googleAccount(user.isGoogleAccount())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .profile(user.getProfile() != null ? ProfileResponse.fromProfile(user.getProfile()) : null)
+                .totalRooms(user.getRooms() != null ? user.getRooms().size() : 0)
                 .build();
     }
 }

@@ -39,7 +39,7 @@ public class PackageResponse {
                 .maxImagesPerListing(packageEntity.getMaxImagesPerListing())
                 .canViewStats(packageEntity.isCanViewStats())
                 .boostDays(packageEntity.getBoostDays())
-                .featuresJson(packageEntity.getFeaturesJson())
+                .featuresJson(packageEntity.getFeatures())
                 .build();
     }
 }

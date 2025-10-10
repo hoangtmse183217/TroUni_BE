@@ -6,6 +6,7 @@ import com.trouni.tro_uni.entity.Package;
 import com.trouni.tro_uni.entity.Subscription;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.exception.AppException;
+import com.trouni.tro_uni.exception.errorcode.PackageErrorCode;
 import com.trouni.tro_uni.exception.errorcode.SubscriptionErrorCode;
 import com.trouni.tro_uni.repository.PackageRepository;
 import com.trouni.tro_uni.repository.SubscriptionRepository;
@@ -47,7 +48,8 @@ public class SubscriptionService {
         }
 
         Package packageEntity = packageRepository.findById(request.getPackageId())
-                .orElseThrow(() -> new AppException(SubscriptionErrorCode.PACKAGE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PackageErrorCode.PACKAGE_NOT_FOUND));
+
 
         Subscription subscription = new Subscription();
         subscription.setUser(currentUser);
@@ -136,11 +138,12 @@ public class SubscriptionService {
                 .orElseThrow(() -> new AppException(SubscriptionErrorCode.SUBSCRIPTION_NOT_FOUND));
 
         Package newPackage = packageRepository.findById(request.getPackageId())
-                .orElseThrow(() -> new AppException(SubscriptionErrorCode.PACKAGE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PackageErrorCode.PACKAGE_NOT_FOUND));
+
 
         // Check if it's actually an upgrade (new package price > current package price)
         if (newPackage.getPricePerMonth().compareTo(subscription.getPackageEntity().getPricePerMonth()) <= 0) {
-            throw new AppException(SubscriptionErrorCode.SUBSCRIPTION_UPGRADE_FAILED);
+            throw new AppException(SubscriptionErrorCode.SUBSCRIPTION_UPGRADE_NOT_ALLOWED);
         }
 
         subscription.setPackageEntity(newPackage);
@@ -166,7 +169,8 @@ public class SubscriptionService {
                 .orElseThrow(() -> new AppException(SubscriptionErrorCode.SUBSCRIPTION_NOT_FOUND));
 
         Package packageEntity = packageRepository.findById(request.getPackageId())
-                .orElseThrow(() -> new AppException(SubscriptionErrorCode.PACKAGE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PackageErrorCode.PACKAGE_NOT_FOUND));
+
 
         // Extend end date from current end date
         LocalDateTime newEndDate = subscription.getEndDate().plusMonths(request.getDurationMonths());

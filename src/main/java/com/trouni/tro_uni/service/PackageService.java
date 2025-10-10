@@ -4,6 +4,8 @@ import com.trouni.tro_uni.dto.request.packages.PackageRequest;
 import com.trouni.tro_uni.dto.response.packages.PackageResponse;
 import com.trouni.tro_uni.entity.Package;
 import com.trouni.tro_uni.exception.AppException;
+import com.trouni.tro_uni.exception.errorcode.PackageErrorCode;
+import com.trouni.tro_uni.exception.errorcode.PaymentErrorCode;
 import com.trouni.tro_uni.exception.errorcode.SubscriptionErrorCode;
 import com.trouni.tro_uni.repository.PackageRepository;
 import lombok.AccessLevel;
@@ -43,7 +45,7 @@ public class PackageService {
         packageEntity.setMaxImagesPerListing(request.getMaxImagesPerListing());
 //        packageEntity.setCanViewStats(request.getCanViewStats());
         packageEntity.setBoostDays(request.getBoostDays());
-        packageEntity.setFeaturesJson(request.getFeaturesJson());
+        packageEntity.setFeatures(request.getFeaturesJson());
 
         Package savedPackage = packageRepository.save(packageEntity);
         log.info("Created new package: {}", savedPackage.getName());
@@ -59,7 +61,8 @@ public class PackageService {
      */
     public PackageResponse getPackageById(UUID packageId) {
         Package packageEntity = packageRepository.findById(packageId)
-                .orElseThrow(() -> new AppException(SubscriptionErrorCode.PACKAGE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PackageErrorCode.PACKAGE_NOT_FOUND));
+
 
         log.info("Retrieved package: {}", packageEntity.getName());
         return PackageResponse.fromPackage(packageEntity);
@@ -73,7 +76,7 @@ public class PackageService {
      */
     public PackageResponse getPackageByName(String name) {
         Package packageEntity = packageRepository.findByName(name)
-                .orElseThrow(() -> new AppException(SubscriptionErrorCode.PACKAGE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PackageErrorCode.PACKAGE_NOT_FOUND));
 
         return PackageResponse.fromPackage(packageEntity);
     }
@@ -98,7 +101,8 @@ public class PackageService {
     @Transactional
     public PackageResponse updatePackage(UUID packageId, PackageRequest request) {
         Package packageEntity = packageRepository.findById(packageId)
-                .orElseThrow(() -> new AppException(SubscriptionErrorCode.PACKAGE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PackageErrorCode.PACKAGE_NOT_FOUND));
+
 
         // Check if new name conflicts with existing package
         if (!packageEntity.getName().equals(request.getName()) &&
@@ -112,7 +116,7 @@ public class PackageService {
         packageEntity.setMaxImagesPerListing(request.getMaxImagesPerListing());
 //        packageEntity.setCanViewStats(request.getCanViewStats());
         packageEntity.setBoostDays(request.getBoostDays());
-        packageEntity.setFeaturesJson(request.getFeaturesJson());
+        packageEntity.setFeatures(request.getFeaturesJson());
 
         Package updatedPackage = packageRepository.save(packageEntity);
         log.info("Updated package: {}", updatedPackage.getName());
@@ -128,7 +132,8 @@ public class PackageService {
     @Transactional
     public void deletePackage(UUID packageId) {
         Package packageEntity = packageRepository.findById(packageId)
-                .orElseThrow(() -> new AppException(SubscriptionErrorCode.PACKAGE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PackageErrorCode.PACKAGE_NOT_FOUND));
+
 
         packageRepository.delete(packageEntity);
         log.info("Deleted package: {}", packageEntity.getName());

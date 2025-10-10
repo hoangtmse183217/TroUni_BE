@@ -39,7 +39,7 @@ public class MasterAmenityService {
      * @return MasterAmenityResponse containing the created amenity details
      * @throws AppException if an amenity with the same name already exists
      */
-    public MasterAmenityResponse createMasterAmenity(UUID roomId, MasterAmenityRequest request) {
+    public MasterAmenityResponse createMasterAmenity(MasterAmenityRequest request) {
         // Kiểm tra trùng tên
         if (masterAmenityRepository.existsByName(request.getName())) {
             throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
@@ -53,13 +53,6 @@ public class MasterAmenityService {
 
         MasterAmenity savedAmenity = masterAmenityRepository.save(amenity);
 
-        // Gán vào phòng
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
-        room.getAmenities().add(savedAmenity);
-        roomRepository.save(room);
-
-        log.info("Created new master amenity '{}' and added to room '{}'", savedAmenity.getName(), room.getId());
         return MasterAmenityResponse.fromMasterAmenity(savedAmenity);
     }
 

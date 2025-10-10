@@ -11,7 +11,7 @@ import com.trouni.tro_uni.enums.PaymentMethod;
 import com.trouni.tro_uni.enums.PaymentStatus;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.PaymentErrorCode;
-import com.trouni.tro_uni.exception.errorcode.UserErrorCode;
+import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
 import com.trouni.tro_uni.repository.PaymentRepository;
 import com.trouni.tro_uni.repository.SubscriptionRepository;
 import com.trouni.tro_uni.repository.UserRepository;
@@ -77,7 +77,7 @@ public class PaymentService {
         // Nếu có subscriptionId, set subscription
         if (request.getSubscriptionId() != null) {
             Subscription subscription = subscriptionRepository.findById(request.getSubscriptionId())
-                    .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_FAILED));
+                    .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_NOT_FOUND));
             payment.setSubscription(subscription);
         }
 
@@ -146,7 +146,7 @@ public class PaymentService {
 
         // Kiểm tra số tiền
         if (payment.getAmount().compareTo(request.getAmount()) != 0) {
-            throw new AppException(PaymentErrorCode.INVALID_PAYMENT_AMOUNT);
+            throw new AppException(PaymentErrorCode.PAYMENT_AMOUNT_INVALID);
         }
 
         // Cập nhật status
@@ -256,7 +256,7 @@ public class PaymentService {
         String username = authentication.getName();
 
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(UserErrorCode.USER_ROLE_INVALID));
+                .orElseThrow(() -> new AppException(AuthenticationErrorCode.UNAUTHORIZED));
     }
 
     /**
