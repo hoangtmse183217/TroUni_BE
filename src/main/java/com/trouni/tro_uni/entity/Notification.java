@@ -24,9 +24,8 @@ public class Notification {
     @JoinColumn(name = "user_id", nullable = false) // The receiver
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private User user;
-    
+
     @Nationalized
-    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
     
     @Column(name = "link_url")

@@ -3,6 +3,8 @@ package com.trouni.tro_uni.exception;
 import com.trouni.tro_uni.exception.errorcode.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 @Setter
 @Getter
@@ -49,25 +51,6 @@ public class AppException extends RuntimeException {
          this.reviewErrorCode = reviewErrorCode;
     }
 
-    public AppException(BookmarkErrorCode bookmarkErrorCode) {
-        super(bookmarkErrorCode.getMessage());
-        this.bookmarkErrorCode = bookmarkErrorCode;
-    }
-
-    public AppException(SubscriptionErrorCode subscriptionErrorCode) {
-        super(subscriptionErrorCode.getMessage());
-        this.subscriptionErrorCode = subscriptionErrorCode;
-    }
-
-    public AppException(PaymentErrorCode paymentErrorCode) {
-        super(paymentErrorCode.getMessage());
-        this.paymentErrorCode = paymentErrorCode;
-    }
-    public AppException(UserErrorCode userErrorCode) {
-        super(userErrorCode.getMessage());
-        this.userErrorCode = userErrorCode;
-    }
-
     // Helper method để lấy code
     public String getErrorCode() {
         if (tokenErrorCode != null) {
@@ -105,41 +88,35 @@ public class AppException extends RuntimeException {
 
     // Helper method để lấy message
     public String getErrorMessage() {
+        // Sử dụng custom message nếu có, nếu không thì dùng default message từ error code
+        String customMessage = super.getMessage();
+
         if (tokenErrorCode != null) {
-            return tokenErrorCode.getMessage();
+            return customMessage != null && !customMessage.equals(tokenErrorCode.getMessage()) ?
+                   customMessage : tokenErrorCode.getMessage();
         }
         if (authErrorCode != null) {
-            return authErrorCode.getMessage();
+            return customMessage != null && !customMessage.equals(authErrorCode.getMessage()) ?
+                   customMessage : authErrorCode.getMessage();
         }
         if (generalErrorCode != null) {
-            return generalErrorCode.getMessage();
+            return customMessage != null && !customMessage.equals(generalErrorCode.getMessage()) ?
+                   customMessage : generalErrorCode.getMessage();
         }
         if (roomErrorCode != null) {
             return roomErrorCode.getMessage();
         }
-        if (masterAmenityErrorCode != null){
+        if (masterAmenityErrorCode != null) {
             return masterAmenityErrorCode.getMessage();
         }
-        if (reviewErrorCode != null){
+        if (reviewErrorCode != null) {
             return reviewErrorCode.getMessage();
         }
-        if (bookmarkErrorCode != null) {
-            return bookmarkErrorCode.getMessage();
-        }
-        if (subscriptionErrorCode != null) {
-            return subscriptionErrorCode.getMessage();
-        }
-         if (paymentErrorCode != null) {
-            return paymentErrorCode.getMessage();
-        }
-          if (userErrorCode != null) {
-            return userErrorCode.getMessage();
-        }
-        return "Unknown error occurred";
+        return customMessage != null ? customMessage : "Unknown error occurred";
     }
 
     // Helper method để lấy status code
-    public org.springframework.http.HttpStatusCode getStatusCode() {
+    public HttpStatusCode getStatusCode() {
         if (tokenErrorCode != null) {
             return tokenErrorCode.getStatusCode();
         }
@@ -152,24 +129,12 @@ public class AppException extends RuntimeException {
         if (roomErrorCode != null) {
             return roomErrorCode.getStatusCode();
         }
-         if (masterAmenityErrorCode != null){
+        if (masterAmenityErrorCode != null) {
             return masterAmenityErrorCode.getStatusCode();
         }
-        if (reviewErrorCode != null){
+        if (reviewErrorCode != null) {
             return reviewErrorCode.getStatusCode();
         }
-        if (bookmarkErrorCode != null) {
-            return bookmarkErrorCode.getStatusCode();
-        }
-        if (subscriptionErrorCode != null) {
-            return subscriptionErrorCode.getStatusCode();
-        }
-         if (paymentErrorCode != null) {
-            return paymentErrorCode.getStatusCode();
-        }
-         if (userErrorCode != null) {
-            return userErrorCode.getStatusCode();
-        }
-        return org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 }

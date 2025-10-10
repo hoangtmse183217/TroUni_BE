@@ -41,31 +41,15 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class AuthController {
     
     private final AuthService authService;
 
     /**
      * API đăng nhập user
-     * <p>
+
      * Endpoint: POST /api/auth/login
-     * <p>
-     * Request body:
-     * {
-     *   "usernameOrEmail": "username hoặc email",
-     *   "password": "password"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "token": "JWT token",
-     *   "id": 1,
-     *   "username": "username",
-     *   "email": "email@example.com",
-     *   "role": "STUDENT"
-     * }
-     * <p>
+
      * @param loginRequest - Thông tin đăng nhập
      * @return ResponseEntity - Response chứa JWT token và thông tin user
      */
@@ -85,23 +69,9 @@ public class AuthController {
     
     /**
      * API đăng ký user mới
-     * <p>
+
      * Endpoint: POST /api/auth/signup
-     * <p>
-     * Request body:
-     * {
-     *   "username": "username",
-     *   "email": "email@example.com",
-     *   "password": "password",
-     *   "firstName": "First Name",
-     *   "lastName": "Last Name"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "message": "User registered successfully!"
-     * }
-     * <p>
+
      * @param signUpRequest - Thông tin đăng ký
      * @return ResponseEntity - Response thông báo kết quả đăng ký
      */
@@ -119,17 +89,9 @@ public class AuthController {
     
     /**
      * API đăng xuất user
-     * <p>
+
      * Endpoint: POST /api/auth/logout
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * <p>
-     * Response thành công:
-     * {
-     *   "message": "User logged out successfully!"
-     * }
-     * <p>
+
      * @param request - HttpServletRequest để lấy token
      * @return ResponseEntity - Response thông báo đăng xuất thành công
      */
@@ -154,9 +116,6 @@ public class AuthController {
     
     /**
      * Extract JWT token từ HttpServletRequest
-     * <p>
-     * @param request - HttpServletRequest
-     * @return String - JWT token hoặc null nếu không tìm thấy
      */
     private String extractTokenFromRequest(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");
@@ -169,27 +128,9 @@ public class AuthController {
     
     /**
      * API đăng nhập bằng Google OAuth
-     * <p>
+
      * Endpoint: POST /auth/google-login
-     * <p>
-     * Request Body:
-     * {
-     *   "accessToken": "google_access_token"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "Google login successful!",
-     *   "data": {
-     *     "token": "jwt_token",
-     *     "id": "uuid",
-     *     "username": "username",
-     *     "email": "email@example.com",
-     *     "role": "STUDENT"
-     *   }
-     * }
-     * 
+
      * @param googleLoginRequest - Request chứa Google access token
      * @return ResponseEntity - Response chứa JWT token và thông tin user
      */
@@ -201,20 +142,9 @@ public class AuthController {
     
     /**
      * API lấy thông tin user hiện tại đang đăng nhập
-     * <p>
+
      * Endpoint: GET /api/auth/me
-     * <p>
-     * Headers:
-     * Authorization: Bearer <JWT_TOKEN>
-     * <p>
-     * Response thành công:
-     * {
-     *   "id": 1,
-     *   "username": "username",
-     *   "email": "email@example.com",
-     *   "role": "STUDENT"
-     * }
-     * 
+
      * @return ResponseEntity - Response chứa thông tin user hiện tại
      */
     @GetMapping("/me")
@@ -226,20 +156,9 @@ public class AuthController {
 
     /**
      * API quên mật khẩu - gửi email reset password
-     * <p>
+
      * Endpoint: POST /auth/forgot-password
-     * <p>
-     * Request body:
-     * {
-     *   "email": "email@example.com"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "Password reset instructions have been sent to your email address."
-     * }
-     * <p>
+
      * @param request - Thông tin email cần reset password
      * @return ResponseEntity - Response thông báo kết quả
      */
@@ -259,21 +178,9 @@ public class AuthController {
 
     /**
      * API reset mật khẩu với token
-     * <p>
+
      * Endpoint: POST /auth/reset-password
-     * <p>
-     * Request body:
-     * {
-     *   "token": "reset_token_from_email",
-     *   "newPassword": "new_password"
-     * }
-     * <p>
-     * Response thành công:
-     * {
-     *   "success": true,
-     *   "message": "Password has been reset successfully. You can now login with your new password."
-     * }
-     * <p>
+
      * @param request - Thông tin token và password mới
      * @return ResponseEntity - Response thông báo kết quả
      */

@@ -6,6 +6,7 @@ import com.trouni.tro_uni.entity.Profile;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
+import com.trouni.tro_uni.mapper.ProfileMapper;
 import com.trouni.tro_uni.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import java.util.UUID;
 public class ProfileService {
     
     private final ProfileRepository profileRepository;
+    private final ProfileMapper profileMapper;
     
     /**
      * Lấy thông tin profile của user hiện tại
@@ -73,26 +75,8 @@ public class ProfileService {
         Profile profile = profileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new AppException(AuthenticationErrorCode.PROFILE_NOT_FOUND));
         
-        // Cập nhật các trường có giá trị
-        if (updateRequest.getFullName() != null && !updateRequest.getFullName().trim().isEmpty()) {
-            profile.setFullName(updateRequest.getFullName().trim());
-        }
-        
-        if (updateRequest.getGender() != null && !updateRequest.getGender().trim().isEmpty()) {
-            profile.setGender(updateRequest.getGender().trim());
-        }
-        
-        if (updateRequest.getPhoneNumber() != null && !updateRequest.getPhoneNumber().trim().isEmpty()) {
-            profile.setPhoneNumber(updateRequest.getPhoneNumber().trim());
-        }
-        
-        if (updateRequest.getAvatarUrl() != null && !updateRequest.getAvatarUrl().trim().isEmpty()) {
-            profile.setAvatarUrl(updateRequest.getAvatarUrl().trim());
-        }
-        
-        if (updateRequest.getBadge() != null && !updateRequest.getBadge().trim().isEmpty()) {
-            profile.setBadge(updateRequest.getBadge().trim());
-        }
+        // Cập nhật các trường có giá trị bằng mapper
+        profileMapper.updateProfileFields(updateRequest, profile);
         
         // Lưu profile đã cập nhật
         Profile savedProfile = profileRepository.save(profile);

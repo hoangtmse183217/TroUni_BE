@@ -32,7 +32,7 @@ public class Payment {
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private Subscription subscription;
     
-    @Column(precision = 12, scale = 0, nullable = false)
+    @Column(precision = 12, nullable = false)
     private BigDecimal amount;
     
     @Column(name = "payment_method", length = 50)

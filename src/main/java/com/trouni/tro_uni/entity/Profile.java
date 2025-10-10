@@ -2,6 +2,7 @@ package com.trouni.tro_uni.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -22,7 +23,8 @@ public class Profile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
     
-    @Column(name = "full_name", length = 150, columnDefinition = "nvarchar(150)")
+    @Nationalized
+    @Column(name = "full_name", length = 150)
     private String fullName;
     
     @Column(length = 20)

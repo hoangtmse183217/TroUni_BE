@@ -3,6 +3,7 @@ package com.trouni.tro_uni.service;
 import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
 import com.trouni.tro_uni.dto.response.MasterAmenity.MasterAmenityResponse;
 import com.trouni.tro_uni.entity.MasterAmenity;
+import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
@@ -16,7 +17,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -36,7 +39,7 @@ public class MasterAmenityService {
      * @return MasterAmenityResponse containing the created amenity details
      * @throws AppException if an amenity with the same name already exists
      */
-    public MasterAmenityResponse createMasterAmenity(MasterAmenityRequest request) {
+    public MasterAmenityResponse createMasterAmenity(UUID roomId, MasterAmenityRequest request) {
         // Kiểm tra trùng tên
         if (masterAmenityRepository.existsByName(request.getName())) {
             throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
@@ -50,8 +53,13 @@ public class MasterAmenityService {
 
         MasterAmenity savedAmenity = masterAmenityRepository.save(amenity);
 
+        // Gán vào phòng
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+        room.getAmenities().add(savedAmenity);
+        roomRepository.save(room);
 
-        log.info("Created new master amenity '{}'", savedAmenity.getName());
+        log.info("Created new master amenity '{}' and added to room '{}'", savedAmenity.getName(), room.getId());
         return MasterAmenityResponse.fromMasterAmenity(savedAmenity);
     }
 
@@ -64,9 +72,11 @@ public class MasterAmenityService {
     public List<MasterAmenityResponse> getAllMasterAmenities() {
         log.info("Retrieving all master amenities");
         // Fetch all amenities and convert to response DTOs
-        return masterAmenityRepository.findAll().stream()
-                .map(MasterAmenityResponse::fromMasterAmenity)
-                .collect(Collectors.toList());
+        List<MasterAmenity> amenities = masterAmenityRepository.findAll();
+        return amenities.stream()
+                        .filter(Objects::nonNull)
+                        .map(MasterAmenityResponse::fromMasterAmenity)
+                        .collect(Collectors.toList());
     }
 
     /**
@@ -85,10 +95,11 @@ public class MasterAmenityService {
 
         // Fetch amenities associated with the room
         List<MasterAmenity> masterAmenity = masterAmenityRepository.findByRoomId(roomId);
-        log.info("Retrieved {} amenities for room ID: {}", masterAmenity.size(), roomId);
-        return masterAmenity.stream()
+        log.info("Retrieved {} amenities for room ID: {}", masterAmenity != null ? masterAmenity.size() : 0, roomId);
+        return masterAmenity != null ? masterAmenity.stream()
+                .filter(amenity -> amenity != null)
                 .map(MasterAmenityResponse::fromMasterAmenity)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
 
     /**
@@ -99,25 +110,25 @@ public class MasterAmenityService {
      * @return MasterAmenityResponse containing the updated amenity details
      * @throws AppException if the amenity is not found or if another amenity with the new name already exists
      */
-    public MasterAmenityResponse updateMasterAmenity(UUID amenityId, MasterAmenityRequest request) {
-        // Find the existing amenity
-        MasterAmenity amenity = masterAmenityRepository.findById(amenityId)
-                .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
-
-        // Check if another amenity with the new name already exists (only if name is being changed)
-        if (!amenity.getName().equals(request.getName()) && masterAmenityRepository.existsByName(request.getName())) {
-            throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
-        }
-
-        // Update amenity properties
-        amenity.setName(request.getName());
-        amenity.setIconUrl(request.getIcon());
-
-        // Save the updated amenity
-        MasterAmenity updatedAmenity = masterAmenityRepository.save(amenity);
-        log.info("Updated master amenity with ID: {}", updatedAmenity.getId());
-        return MasterAmenityResponse.fromMasterAmenity(updatedAmenity);
-    }
+//    public MasterAmenityResponse updateMasterAmenity(UUID amenityId, MasterAmenityRequest request) {
+//        // Find the existing amenity
+//        MasterAmenity amenity = masterAmenityRepository.findById(amenityId)
+//                .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
+//
+//        // Check if another amenity with the new name already exists (only if name is being changed)
+//        if (!amenity.getName().equals(request.getName()) && masterAmenityRepository.existsByName(request.getName())) {
+//            throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_ALREADY_EXISTS);
+//        }
+//
+//        // Update amenity properties
+//        amenity.setName(request.getName());
+//        amenity.setIconUrl(request.getIcon());
+//
+//        // Save the updated amenity
+//        MasterAmenity updatedAmenity = masterAmenityRepository.save(amenity);
+//        log.info("Updated master amenity with ID: {}", updatedAmenity.getId());
+//        return MasterAmenityResponse.fromMasterAmenity(updatedAmenity);
+//    }
 
     /**
      * Deletes a master amenity from the system.

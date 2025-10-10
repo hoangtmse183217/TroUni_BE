@@ -164,7 +164,21 @@ public class SecurityConfig {
                                 "/subscriptions/**",//Subscriptions endpoints
                                 "/packages/**",//Packages endpoints
                                 "/chat/**",// Chat Endpoints
-                                "/ws/**"// WebSocket Endpoints
+                                "/ws/**",// WebSocket Endpoints
+                                "/v3/api-docs/**",    // Swagger API docs
+                                "/swagger-ui/**",     // Swagger UI
+                                "/swagger-ui.html",   // Swagger UI HTML
+                                "/rooms/search",  // Room search (public)
+                                "/rooms",         // Public room listing
+                                "/rooms/*/details", // Room details (public)
+                                "/rooms/*/images",  // Room images (public)
+                                "/rooms/*/summary", // Room summary (public)
+                                "/reviews/*",         // Get reviews by room (public)
+                                "/master-amenities",  // Get all master amenities (public)
+                                "/master-amenities/room/*", // Get amenities by room (public)
+                                "/roommate-posts",    // Get roommate posts (public)
+                                "/roommate-posts/*",  // Get specific roommate post (public)
+                                "/roommate-posts/search/*" // Search roommate posts (public)
                         ).permitAll()
 
                         // Tất cả các endpoint khác cần authentication

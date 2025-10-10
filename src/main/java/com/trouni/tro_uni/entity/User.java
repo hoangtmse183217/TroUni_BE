@@ -6,6 +6,7 @@ import com.trouni.tro_uni.enums.VerificationStatus;
 import com.trouni.tro_uni.enums.AccountStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,7 +44,8 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "user_name", nullable = false, unique = true, length = 100, columnDefinition = "nvarchar(100)")
+    @Nationalized
+    @Column(name = "user_name", nullable = false, unique = true, length = 100)
     private String username;
 
     @Column(nullable = false, unique = true, length = 100)
@@ -58,7 +60,7 @@ public class User implements UserDetails {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role = UserRole.STUDENT;
+    private UserRole role;
 
     @Column(name = "is_phone_verified")
     private boolean phoneVerified = false;

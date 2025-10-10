@@ -29,9 +29,8 @@ public class Report {
     
     @Column(name = "reported_content_id", nullable = false)
     private UUID reportedContentId;
-    
+
     @Nationalized
-    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String reason;
     
     @Column(length = 20)

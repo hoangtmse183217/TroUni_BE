@@ -23,16 +23,14 @@ public class RoommatePost {
     @ManyToOne
     @JoinColumn(name = "author_user_id", nullable = false)
     private User author; // Must be a user with student role
-    
+
     @Nationalized
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String title;
-    
+
     @Nationalized
-    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
     
-    @Nationalized
     @Column(name = "desired_location_text")
     private String desiredLocationText; // User-input text like "Near University of Science"
     

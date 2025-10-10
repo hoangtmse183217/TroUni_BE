@@ -43,8 +43,7 @@ public class UserVerification {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VerificationStatus status;
-    
+
     @Nationalized
-    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String notes; // Reason for rejection, etc.
 }

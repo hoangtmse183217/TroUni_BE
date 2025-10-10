@@ -14,7 +14,6 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Message {
     
     @Id
@@ -30,9 +29,8 @@ public class Message {
     @JoinColumn(name = "sender_user_id", nullable = false)
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private User sender;
-    
+
     @Nationalized
-    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
     
     @Column(name = "is_read")
