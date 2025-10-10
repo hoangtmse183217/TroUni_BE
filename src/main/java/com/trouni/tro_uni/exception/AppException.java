@@ -14,6 +14,10 @@ public class AppException extends RuntimeException {
     private RoomErrorCode roomErrorCode;
     private ReviewErrorCode reviewErrorCode;
     private MasterAmenityErrorCode masterAmenityErrorCode;
+    private BookmarkErrorCode bookmarkErrorCode;
+    private SubscriptionErrorCode subscriptionErrorCode;
+    private PaymentErrorCode paymentErrorCode;
+    private UserErrorCode userErrorCode;
 
     public AppException(TokenErrorCode tokenErrorCode) {
         super(tokenErrorCode.getMessage());
@@ -45,6 +49,25 @@ public class AppException extends RuntimeException {
          this.reviewErrorCode = reviewErrorCode;
     }
 
+    public AppException(BookmarkErrorCode bookmarkErrorCode) {
+        super(bookmarkErrorCode.getMessage());
+        this.bookmarkErrorCode = bookmarkErrorCode;
+    }
+
+    public AppException(SubscriptionErrorCode subscriptionErrorCode) {
+        super(subscriptionErrorCode.getMessage());
+        this.subscriptionErrorCode = subscriptionErrorCode;
+    }
+
+    public AppException(PaymentErrorCode paymentErrorCode) {
+        super(paymentErrorCode.getMessage());
+        this.paymentErrorCode = paymentErrorCode;
+    }
+    public AppException(UserErrorCode userErrorCode) {
+        super(userErrorCode.getMessage());
+        this.userErrorCode = userErrorCode;
+    }
+
     // Helper method để lấy code
     public String getErrorCode() {
         if (tokenErrorCode != null) {
@@ -64,6 +87,18 @@ public class AppException extends RuntimeException {
         }
         if (reviewErrorCode != null){
             return reviewErrorCode.getCode();
+        }
+        if (bookmarkErrorCode != null) {
+            return bookmarkErrorCode.getCode();
+        }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getCode();
+        }
+        if (paymentErrorCode != null) {
+            return paymentErrorCode.getCode();
+        }
+        if (userErrorCode != null) {
+            return userErrorCode.getCode();
         }
         return "UNKNOWN_ERROR";
     }
@@ -88,6 +123,18 @@ public class AppException extends RuntimeException {
         if (reviewErrorCode != null){
             return reviewErrorCode.getMessage();
         }
+        if (bookmarkErrorCode != null) {
+            return bookmarkErrorCode.getMessage();
+        }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getMessage();
+        }
+         if (paymentErrorCode != null) {
+            return paymentErrorCode.getMessage();
+        }
+          if (userErrorCode != null) {
+            return userErrorCode.getMessage();
+        }
         return "Unknown error occurred";
     }
 
@@ -110,6 +157,18 @@ public class AppException extends RuntimeException {
         }
         if (reviewErrorCode != null){
             return reviewErrorCode.getStatusCode();
+        }
+        if (bookmarkErrorCode != null) {
+            return bookmarkErrorCode.getStatusCode();
+        }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getStatusCode();
+        }
+         if (paymentErrorCode != null) {
+            return paymentErrorCode.getStatusCode();
+        }
+         if (userErrorCode != null) {
+            return userErrorCode.getStatusCode();
         }
         return org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
     }

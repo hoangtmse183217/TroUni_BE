@@ -2,6 +2,7 @@ package com.trouni.tro_uni.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,12 +24,15 @@ public class RoommatePost {
     @JoinColumn(name = "author_user_id", nullable = false)
     private User author; // Must be a user with student role
     
+    @Nationalized
     @Column(nullable = false, length = 255)
     private String title;
     
-    @Column(columnDefinition = "TEXT")
+    @Nationalized
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
     
+    @Nationalized
     @Column(name = "desired_location_text")
     private String desiredLocationText; // User-input text like "Near University of Science"
     

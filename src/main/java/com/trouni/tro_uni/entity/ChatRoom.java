@@ -5,26 +5,38 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "chat_rooms")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatRoom {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    
+
+    @Builder.Default
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
-    
-    // Relationships
+
+    @ManyToMany
+    @JoinTable(
+            name = "chat_room_participants",
+            joinColumns = @JoinColumn(name = "chat_room_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @Builder.Default
+    private List<User> participants = new ArrayList<>();
+
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore // Tránh circular reference khi serialize JSON
-    private List<Message> messages;
+    @JsonIgnore
+    @Builder.Default
+    private List<Message> messages = new ArrayList<>();
 }

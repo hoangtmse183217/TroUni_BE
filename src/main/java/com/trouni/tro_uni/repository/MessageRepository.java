@@ -28,4 +28,6 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     long countUnreadByChatRoomAndNotSender(@Param("chatRoom") ChatRoom chatRoom, @Param("currentUser") User currentUser);
     
     List<Message> findByChatRoomAndReadFalse(ChatRoom chatRoom);
+
+    List<Message> findByChatRoomIdOrderBySentAtAsc(UUID roomId);
 }

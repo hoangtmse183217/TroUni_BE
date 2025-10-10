@@ -54,6 +54,8 @@ public class RoomImageController {
         return ResponseEntity.ok(roomImageService.getRoomImages(roomId));
     }
 
+
+
     /**
      * Delete an image from a room
      *

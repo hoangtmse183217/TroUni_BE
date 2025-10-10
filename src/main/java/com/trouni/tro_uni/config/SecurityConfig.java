@@ -159,8 +159,12 @@ public class SecurityConfig {
                                 "/rooms/**" ,// Room endpoints
                                 "/room-images/**",// Room-image endpoints
                                 "/reviews/**",// Review endpoints
-                                "/master-amenities/**"//Master-amenity endpoints
-
+                                "/master-amenities/**",//Master-amenity endpoints
+                                "/payments/**",//Payments endpoints
+                                "/subscriptions/**",//Subscriptions endpoints
+                                "/packages/**",//Packages endpoints
+                                "/chat/**",// Chat Endpoints
+                                "/ws/**"// WebSocket Endpoints
                         ).permitAll()
 
                         // Tất cả các endpoint khác cần authentication
