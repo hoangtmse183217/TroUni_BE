@@ -29,9 +29,12 @@ public class ReviewResponse {
 
     // Timestamps
     private LocalDateTime createdAt;
+    // Timestamps
+    private LocalDateTime updatedAt;
 
     /**
      * Convert Review entity to ReviewResponse DTO
+     *
      * @param review - Review entity to convert
      * @return ReviewResponse
      */
@@ -45,6 +48,7 @@ public class ReviewResponse {
                 .roomId(review.getRoom().getId())
                 .user(UserResponse.fromUser(review.getUser()))
                 .createdAt(review.getCreatedAt())
+                .updatedAt(review.getUpdatedAt())
                 .build();
     }
 }

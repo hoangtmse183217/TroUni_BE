@@ -9,36 +9,43 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "reviews", indexes = {
-    @Index(name = "idx_user_room_unique", columnList = "user_id, room_id", unique = true)
-})
+//@Table(name = "reviews", indexes = {
+//    @Index(name = "idx_user_room_unique", columnList = "user_id, room_id", unique = true)
+//})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Review {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    
+
     @ManyToOne
     @JoinColumn(name = "room_id", nullable = false)
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private Room room;
-    
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private User user;
-    
+
     @Column
     private Integer score; // Rating from 1 to 5
 
     @Nationalized
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String comment;
-    
-    @Column(name = "created_at")
+
+    @Column(name = "created_at", nullable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
 }

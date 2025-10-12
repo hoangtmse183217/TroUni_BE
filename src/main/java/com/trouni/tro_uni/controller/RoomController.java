@@ -131,6 +131,13 @@ public class RoomController {
         }
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<RoomResponse>> getRoomByUserId(
+            @PathVariable UUID userId
+    ) {
+        return ResponseEntity.ok(roomService.getRoomsByUserId(userId));
+    }
+
     /**
      * Update room details
      *

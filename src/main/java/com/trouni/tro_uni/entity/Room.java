@@ -30,31 +30,33 @@ public class Room {
     
     @ManyToOne
     @JoinColumn(name = "owner_user_id", nullable = false)
-    @JsonIgnore // Tránh circular reference khi serialize JSON
     private User owner; // Must be a user with landlord role
-
+    
     @Nationalized
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String title;
 
     @Nationalized
-    @Column(name = "description")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "room_type", nullable = false)
     private RoomType roomType = RoomType.PHONG_TRO;
-
+    // Address information
     @Nationalized
-    @Column(name = "street_address")
+    @Column(name = "street_address", length = 255)
     private String streetAddress;
     
+    @Nationalized
     @Column(length = 100)
     private String city;
-    
+
+    @Nationalized
     @Column(length = 100)
     private String district;
-    
+
+    @Nationalized
     @Column(length = 100)
     private String ward;
     
@@ -64,7 +66,7 @@ public class Room {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
     
-    @Column(name = "price_per_month", precision = 12, nullable = false)
+    @Column(name = "price_per_month", precision = 12, scale = 0, nullable = false)
     private BigDecimal pricePerMonth;
     
     @Column(name = "area_sqm", precision = 5, scale = 2)
