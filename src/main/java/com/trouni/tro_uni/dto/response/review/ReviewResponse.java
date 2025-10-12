@@ -48,7 +48,6 @@ public class ReviewResponse {
                 .roomId(review.getRoom().getId())
                 .user(UserResponse.fromUser(review.getUser()))
                 .createdAt(review.getCreatedAt())
-                .updatedAt(review.getUpdatedAt())
                 .build();
     }
 }

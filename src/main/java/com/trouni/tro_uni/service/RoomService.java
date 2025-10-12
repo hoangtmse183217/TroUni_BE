@@ -1,31 +1,42 @@
 package com.trouni.tro_uni.service;
 
+import com.trouni.tro_uni.dto.request.RoomSearchRequest;
 import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
 import com.trouni.tro_uni.dto.request.room.RoomRequest;
 import com.trouni.tro_uni.dto.request.room.UpdateRoomRequest;
+import com.trouni.tro_uni.dto.response.RoomListItemResponse;
+import com.trouni.tro_uni.dto.response.RoomSummaryResponse;
+import com.trouni.tro_uni.dto.response.RoomImagesResponse;
+import com.trouni.tro_uni.dto.response.RoomImageResponse;
 import com.trouni.tro_uni.dto.response.room.RoomResponse;
 import com.trouni.tro_uni.entity.MasterAmenity;
 import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.RoomImage;
 import com.trouni.tro_uni.entity.User;
-import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
-import com.trouni.tro_uni.exception.errorcode.UserErrorCode;
+import com.trouni.tro_uni.exception.errorcode.MasterAmenityErrorCode;
+import com.trouni.tro_uni.mapper.RoomMapper;
 import com.trouni.tro_uni.repository.MasterAmenityRepository;
-import com.trouni.tro_uni.repository.RoomImageRepository;
 import com.trouni.tro_uni.repository.RoomRepository;
-import com.trouni.tro_uni.repository.UserRepository;
+import com.trouni.tro_uni.repository.RoomImageRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,14 +44,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomService {
-    MasterAmenityRepository masterAmenityRepository;
-    RoomImageRepository roomImageRepository;
+
+    @Autowired
     RoomRepository roomRepository;
-    UserRepository userRepository;
+
+    RoomMapper roomMapper;
+
+    @Autowired
+    RoomImageRepository roomImageRepository;
+
+    MasterAmenityRepository masterAmenityRepository;
 
     /**
      * Create a new room listing
-     * <p>
      *
      * @param currentUser - The landlord user creating the room
      * @param request     - Room creation details including title, price, location, etc
@@ -48,10 +64,8 @@ public class RoomService {
      * @throws AppException - If user is not authorized as landlord
      */
     public RoomResponse createRoom(User currentUser, RoomRequest request) {
-        if (currentUser.getRole() != UserRole.LANDLORD) {
-            throw new AppException(RoomErrorCode.NOT_LANDLORD);
-        }
 
+        // Step 1: Create Room and save first to get ID
         Room room = Room.builder()
                 .owner(currentUser)
                 .title(request.getTitle())
@@ -65,40 +79,42 @@ public class RoomService {
                 .longitude(request.getLongitude())
                 .pricePerMonth(request.getPricePerMonth())
                 .areaSqm(request.getAreaSqm())
-                .status(request.getStatus())
+                .status("available")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        // Create image
-        List<String> imageUrls = Optional.ofNullable(request.getImages()).orElse(Collections.emptyList());
-        List<RoomImage> images = imageUrls.stream()
-                .map(url -> RoomImage.builder()
-                        .imageUrl(url)
-                        .primary(false)
-                        .room(room)
-                        .build())
-                .collect(Collectors.toList());
-        room.setImages(images);
+        Room savedRoom = roomRepository.save(room); // Save first to get ID
 
-        // Create Amenity
-//        List<MasterAmenityRequest> amenityDtos = Optional.ofNullable(request.getAmenities()).orElse(Collections.emptyList());
-//        List<MasterAmenity> amenities = amenityDtos.stream()
-//                .map(dto -> masterAmenityRepository
-//                        .findByName(dto.getName())
-//                        .orElseGet(() -> {
-//                            MasterAmenity newAmenity = new MasterAmenity();
-//                            newAmenity.setName(dto.getName());
-//                            newAmenity.setIconUrl(dto.getIcon());
-//                            return masterAmenityRepository.save(newAmenity);
-//                        })
-//                )
-//                .collect(Collectors.toList());
-//        room.setAmenities(amenities);
+        // Step 2: Process List<String> to RoomImage
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<RoomImage> savedImages = request.getImages().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(url -> {
+                        RoomImage image = new RoomImage();
+                        image.setImageUrl(url);
+                        image.setPrimary(false);
+                        image.setRoom(savedRoom); // Room now has ID
+                        return roomImageRepository.save(image);
+                    })
+                    .collect(Collectors.toList());
+            savedRoom.setImages(savedImages);
+        }
 
-        Room savedRoom = roomRepository.save(room);
-        log.info("Created new room with ID: {} by user: {}", savedRoom.getId(), currentUser.getUsername());
-        return RoomResponse.fromRoom(savedRoom);
+        // Step 3: Process amenities from AmenityRequest to MasterAmenity
+        List<MasterAmenity> savedAmenities = new ArrayList<>();
+        if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
+            savedAmenities = request.getAmenities().stream()
+                    .filter(dto -> dto != null && dto.getName() != null && !dto.getName().trim().isEmpty())
+                    .map(dto -> getOrCreateMasterAmenity(dto.getName(), dto.getIcon()))
+                    .collect(Collectors.toList());
+        }
+        savedRoom.setAmenities(savedAmenities);
+
+        // Bước 4: Lưu lại Room với ảnh và tiện ích
+        Room finalRoom = roomRepository.save(savedRoom);
+        log.info("Created new room with ID: {} by user: {}", finalRoom.getId(), currentUser.getUsername());
+        return RoomResponse.fromRoom(finalRoom);
     }
 
 
@@ -118,30 +134,25 @@ public class RoomService {
         roomRepository.save(room);
 
         log.info("Retrieved room details for ID: {}", roomId);
-        return RoomResponse.fromRoom(room);
+        return RoomResponse.fromRoom(room); // Truyền thêm roomRepository
     }
 
     /**
-     * Get all rooms owned by a specific user (without pagination)
-     *
-     * @param userId - UUID of the user (landlord)
-     * @return List<RoomResponse> - All rooms of the user
-     * @throws AppException - When user is not found
+     * Lấy danh sách ảnh của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về danh sách ảnh rỗng.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
      */
-    public List<RoomResponse> getRoomsByUserId(UUID userId) {
-        // Verify user exists
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(UserErrorCode.PROFILE_NOT_FOUND));
+    @Transactional(readOnly = true)
+    public RoomImagesResponse getRoomImages(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
-        // Get all rooms by owner
-        List<Room> rooms = roomRepository.findAll().stream()
-                .filter(room -> room.getOwner().getId().equals(userId))
-                .toList();
-
-        log.info("Retrieved {} rooms for user: {}", rooms.size(), user.getUsername());
-        return rooms.stream()
-                .map(RoomResponse::fromRoom)
+        // Lấy danh sách ảnh trực tiếp từ đối tượng room đã được fetch
+        List<RoomImageResponse> imageResponses = room.getImages().stream()
+                .map(RoomImageResponse::fromRoomImage) // Dùng lại phương thức mapping của bạn
                 .collect(Collectors.toList());
+
+        return new RoomImagesResponse(imageResponses);
     }
 
     /**
@@ -204,6 +215,45 @@ public class RoomService {
         return RoomResponse.fromRoom(updatedRoom);
     }
 
+    /**
+     * Lấy tóm tắt thông tin của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về null.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
+     */
+    @Transactional(readOnly = true)
+    public RoomSummaryResponse getRoomSummary(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Kiểm tra xem phòng có public không
+        if (!"available".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND); // Coi như không tìm thấy
+        }
+
+        return toRoomSummaryResponse(room);
+    }
+
+    /**
+     * Get all rooms owned by a specific user
+     * <p>
+     *
+     * @param userId - UUID of the user/owner
+     * @return List<RoomResponse> - List of rooms owned by the user
+     * @throws AppException - When no rooms found for the user
+     */
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomByUserId(UUID userId) {
+        List<Room> rooms = roomRepository.findByOwnerId(userId);
+
+        if (rooms.isEmpty()) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
+        }
+
+        log.info("Retrieved {} rooms for user ID: {}", rooms.size(), userId);
+        return rooms.stream()
+                .map(RoomResponse::fromRoom)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Delete a room listing
@@ -248,53 +298,114 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Search rooms with filters
-     * @param city - City filter
-     * @param district - District filter
-     * @param minPrice - Minimum price
-     * @param maxPrice - Maximum price
-     * @param minArea - Minimum area
-     * @param maxArea - Maximum area
-     * @param pageable - Pagination information
-     * @return Page<RoomResponse> - Filtered and paginated rooms
-     */
-//    public Page<RoomResponse> searchRooms(
-//            String city,
-//            String district,
-//            Double minPrice,
-//            Double maxPrice,
-//            Double minArea,
-//            Double maxArea,
-//            Pageable pageable
-//    ) {
-//        // Convert Double to BigDecimal for price comparison
-//        BigDecimal minPriceDecimal = minPrice != null ? BigDecimal.valueOf(minPrice) : null;
-//        BigDecimal maxPriceDecimal = maxPrice != null ? BigDecimal.valueOf(maxPrice) : null;
-//        BigDecimal minAreaDecimal = minArea != null ? BigDecimal.valueOf(minArea) : null;
-//        BigDecimal maxAreaDecimal = maxArea != null ? BigDecimal.valueOf(maxArea) : null;
-//
-//        return roomRepository.findByFilters(
-//                city,
-//                district,
-//                minPriceDecimal,
-//                maxPriceDecimal,
-//                minAreaDecimal,
-//                maxAreaDecimal,
-//                "available",
-//                pageable
-//        ).map(RoomResponse::fromRoom);
-//    }
+    // ================== HELPER METHODS ==================
 
     /**
-     * Get rooms owned by a specific user
-     * <p>
-     * @param currentUser - The user whose rooms to retrieve
-     * @param pageable - Pagination information
-     * @return Page<RoomResponse> - Paginated list of user's rooms
+     * Get or create MasterAmenity by name to avoid duplicates
      */
-//    public Page<RoomResponse> getUserRooms(User currentUser, Pageable pageable) {
-//        return roomRepository.findByOwnerId(currentUser.getId(), pageable)
-//                .map(RoomResponse::fromRoom);
-//    }
+    private MasterAmenity getOrCreateMasterAmenity(String name, String iconUrl) {
+        String amenityName = name.trim();
+
+        // Check if amenity already exists by name
+        Optional<MasterAmenity> existingAmenity = masterAmenityRepository.findByName(amenityName);
+        if (existingAmenity.isPresent()) {
+            log.info("Using existing MasterAmenity: {}", amenityName);
+            return existingAmenity.get();
+        } else {
+            // Create new amenity only if it doesn't exist
+            try {
+                log.info("Creating new MasterAmenity: {}", amenityName);
+                MasterAmenity amenity = new MasterAmenity();
+                amenity.setName(amenityName);
+                amenity.setIconUrl(iconUrl);
+                amenity.setActive(true);
+                return masterAmenityRepository.save(amenity);
+            } catch (DataIntegrityViolationException e) {
+                // Handle case where amenity was created by another thread
+                log.warn("MasterAmenity '{}' was created by another process, retrieving existing one", amenityName);
+                return masterAmenityRepository.findByName(amenityName)
+                        .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
+            }
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomListItemResponse> searchRooms(RoomSearchRequest request) {
+
+        String status = "available";
+
+        BigDecimal minPrice = request.getMinPrice() != null ? BigDecimal.valueOf(request.getMinPrice()) : null;
+        BigDecimal maxPrice = request.getMaxPrice() != null ? BigDecimal.valueOf(request.getMaxPrice()) : null;
+        BigDecimal minArea = request.getMinArea() != null ? BigDecimal.valueOf(request.getMinArea()) : null;
+        BigDecimal maxArea = request.getMaxArea() != null ? BigDecimal.valueOf(request.getMaxArea()) : null;
+
+        // Sử dụng trực tiếp các trường từ request, không cần xử lý chuỗi nữa
+        List<Room> foundRooms = roomRepository.searchAndFilter(
+                status,
+                request.getCity(),
+                request.getDistrict(),
+                request.getWard(),
+                minPrice,
+                maxPrice,
+                minArea,
+                maxArea,
+                request.getRoomType()
+        );
+
+        return foundRooms.stream()
+                .map(this::toRoomListItemResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all public rooms
+     */
+    @Transactional(readOnly = true)
+    public List<RoomListItemResponse> getPublicRooms() {
+        // Chỉ lấy các phòng có status "available" từ database
+        List<Room> publicRooms = roomRepository.findByStatus("available");
+        return publicRooms.stream()
+                .map(this::toRoomListItemResponse)
+                .collect(Collectors.toList());
+    }
+
+    // ================== MAPPING METHODS ==================
+
+    private RoomListItemResponse toRoomListItemResponse(Room room) {
+        return new RoomListItemResponse(
+                room.getId(),
+                room.getTitle(),
+                String.join(", ", room.getStreetAddress(), room.getWard(), room.getDistrict(), room.getCity()),
+                room.getRoomType(),
+                room.getAreaSqm() != null ? room.getAreaSqm().doubleValue() : null,
+                room.getPricePerMonth() != null ? room.getPricePerMonth().intValue() : null,
+                getThumbnailUrl(room)
+        );
+    }
+
+    private RoomSummaryResponse toRoomSummaryResponse(Room room) {
+        return new RoomSummaryResponse(
+                room.getId(),
+                room.getTitle(),
+                room.getStreetAddress(),
+                room.getRoomType(),
+                room.getAreaSqm() != null ? room.getAreaSqm().doubleValue() : null,
+                room.getPricePerMonth() != null ? room.getPricePerMonth().intValue() : null,
+                room.getDescription(),
+                room.getOwner() != null ? room.getOwner().getProfile().getFullName() : null,
+                room.getOwner() != null ? room.getOwner().getProfile().getPhoneNumber() : null,
+                getThumbnailUrl(room)
+        );
+    }
+
+    private String getThumbnailUrl(Room room) {
+        if (room.getImages() != null && !room.getImages().isEmpty()) {
+            return room.getImages().stream()
+                    .filter(RoomImage::isPrimary)
+                    .findFirst()
+                    .map(RoomImage::getImageUrl)
+                    .orElse(room.getImages().getFirst().getImageUrl());
+        }
+        return null;
+    }
 }

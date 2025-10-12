@@ -16,6 +16,11 @@ public class AppException extends RuntimeException {
     private RoomErrorCode roomErrorCode;
     private ReviewErrorCode reviewErrorCode;
     private MasterAmenityErrorCode masterAmenityErrorCode;
+//    private BookmarkErrorCode bookmarkErrorCode;
+    private SubscriptionErrorCode subscriptionErrorCode;
+    private PaymentErrorCode paymentErrorCode;
+    private PackageErrorCode packageErrorCode;
+//    private UserErrorCode userErrorCode;
 
     public AppException(TokenErrorCode tokenErrorCode) {
         super(tokenErrorCode.getMessage());
@@ -47,24 +52,24 @@ public class AppException extends RuntimeException {
         this.reviewErrorCode = reviewErrorCode;
     }
 
-    public AppException(TokenErrorCode tokenErrorCode, String customMessage) {
-        super(customMessage);
-        this.tokenErrorCode = tokenErrorCode;
+    public AppException(SubscriptionErrorCode subscriptionErrorCode) {
+        super(subscriptionErrorCode.getMessage());
+        this.subscriptionErrorCode = subscriptionErrorCode;
     }
 
-    public AppException(AuthenticationErrorCode authErrorCode, String customMessage) {
-        super(customMessage);
-        this.authErrorCode = authErrorCode;
+    public AppException(PaymentErrorCode paymentErrorCode) {
+        super(paymentErrorCode.getMessage());
+        this.paymentErrorCode = paymentErrorCode;
+    }
+
+    public AppException(PackageErrorCode packageErrorCode) {
+        super(packageErrorCode.getMessage());
+        this.packageErrorCode = packageErrorCode;
     }
 
     public AppException(GeneralErrorCode generalErrorCode, String customMessage) {
         super(customMessage);
         this.generalErrorCode = generalErrorCode;
-    }
-
-    public AppException(MasterAmenityErrorCode masterAmenityErrorCode, String customMessage) {
-        super(customMessage);
-        this.masterAmenityErrorCode = masterAmenityErrorCode;
     }
 
     // Helper method để lấy code
@@ -81,12 +86,22 @@ public class AppException extends RuntimeException {
         if (roomErrorCode != null) {
             return roomErrorCode.getCode();
         }
-        if (masterAmenityErrorCode != null) {
+        if (masterAmenityErrorCode != null){
             return masterAmenityErrorCode.getCode();
         }
-        if (reviewErrorCode != null) {
+        if (reviewErrorCode != null){
             return reviewErrorCode.getCode();
         }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getCode();
+        }
+        if (paymentErrorCode != null) {
+            return paymentErrorCode.getCode();
+        }
+        if (packageErrorCode != null) {
+            return packageErrorCode.getCode();
+        }
+
         return "UNKNOWN_ERROR";
     }
 
@@ -94,17 +109,17 @@ public class AppException extends RuntimeException {
     public String getErrorMessage() {
         // Sử dụng custom message nếu có, nếu không thì dùng default message từ error code
         String customMessage = super.getMessage();
-        
+
         if (tokenErrorCode != null) {
-            return customMessage != null && !customMessage.equals(tokenErrorCode.getMessage()) ? 
+            return customMessage != null && !customMessage.equals(tokenErrorCode.getMessage()) ?
                    customMessage : tokenErrorCode.getMessage();
         }
         if (authErrorCode != null) {
-            return customMessage != null && !customMessage.equals(authErrorCode.getMessage()) ? 
+            return customMessage != null && !customMessage.equals(authErrorCode.getMessage()) ?
                    customMessage : authErrorCode.getMessage();
         }
         if (generalErrorCode != null) {
-            return customMessage != null && !customMessage.equals(generalErrorCode.getMessage()) ? 
+            return customMessage != null && !customMessage.equals(generalErrorCode.getMessage()) ?
                    customMessage : generalErrorCode.getMessage();
         }
         if (roomErrorCode != null) {
@@ -116,6 +131,16 @@ public class AppException extends RuntimeException {
         if (reviewErrorCode != null) {
             return reviewErrorCode.getMessage();
         }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getMessage();
+        }
+        if (paymentErrorCode != null) {
+            return paymentErrorCode.getMessage();
+        }
+        if (packageErrorCode != null) {
+            return packageErrorCode.getMessage();
+        }
+
         return customMessage != null ? customMessage : "Unknown error occurred";
     }
 
@@ -139,6 +164,16 @@ public class AppException extends RuntimeException {
         if (reviewErrorCode != null) {
             return reviewErrorCode.getStatusCode();
         }
+        if (subscriptionErrorCode != null) {
+            return subscriptionErrorCode.getStatusCode();
+        }
+        if (paymentErrorCode != null) {
+            return paymentErrorCode.getStatusCode();
+        }
+        if (packageErrorCode != null) {
+            return packageErrorCode.getStatusCode();
+        }
+
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 }

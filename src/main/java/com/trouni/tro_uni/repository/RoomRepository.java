@@ -18,32 +18,32 @@ import java.util.UUID;
 public interface RoomRepository extends JpaRepository<Room, UUID> {
 
     // ================== ORIGINAL SEARCH METHODS (from main branch) ==================
-    
+
     Page<Room> findByStatus(String status, Pageable pageable);
-    
+
     Page<Room> findByRoomType(RoomType roomType, Pageable pageable);
-    
+
     Page<Room> findByCityAndDistrict(String city, String district, Pageable pageable);
-    
+
     Page<Room> findByCity(String city, Pageable pageable);
-    
+
     @Query("SELECT r FROM Room r WHERE r.pricePerMonth >= :minPrice AND r.pricePerMonth <= :maxPrice")
-    Page<Room> findByPriceRange(@Param("minPrice") BigDecimal minPrice, 
-                               @Param("maxPrice") BigDecimal maxPrice, 
-                               Pageable pageable);
-    
+    Page<Room> findByPriceRange(@Param("minPrice") BigDecimal minPrice,
+                                @Param("maxPrice") BigDecimal maxPrice,
+                                Pageable pageable);
+
     @Query("SELECT r FROM Room r WHERE r.status = :status AND r.city = :city AND r.district = :district " +
-           "AND r.pricePerMonth >= :minPrice AND r.pricePerMonth <= :maxPrice")
+            "AND r.pricePerMonth >= :minPrice AND r.pricePerMonth <= :maxPrice")
     Page<Room> findByMultipleCriteria(@Param("status") String status,
-                                    @Param("city") String city,
-                                    @Param("district") String district,
-                                    @Param("minPrice") BigDecimal minPrice,
-                                    @Param("maxPrice") BigDecimal maxPrice,
-                                    Pageable pageable);
-    
+                                      @Param("city") String city,
+                                      @Param("district") String district,
+                                      @Param("minPrice") BigDecimal minPrice,
+                                      @Param("maxPrice") BigDecimal maxPrice,
+                                      Pageable pageable);
+
     @Query("SELECT COUNT(r) FROM Room r WHERE r.owner = :owner AND r.status = :status")
     long countByOwnerAndStatus(@Param("owner") User owner, @Param("status") String status);
-    
+
     List<Room> findTop10ByOrderByViewCountDesc();
 
     @Query("SELECT r FROM Room r WHERE " +
@@ -70,10 +70,13 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
     List<Room> findByStatus(String status);
 
     // ================== NEW METHODS (from nguyenvuong-dev branch) ==================
-    
+
     Page<Room> findByOwnerId(UUID ownerId, Pageable pageable);
-    
+
     List<Room> findByOwner(User owner);
-    
+
     List<Room> findByOwnerId(UUID ownerId);
+
+    @Query("SELECT COUNT(r) FROM Room r WHERE r.owner.id = :ownerId")
+    long countByOwnerId(@Param("ownerId") UUID ownerId);
 }

@@ -132,10 +132,16 @@ public class RoomController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<RoomResponse>> getRoomByUserId(
+    public ResponseEntity<?> getRoomByUserId(
             @PathVariable UUID userId
     ) {
-        return ResponseEntity.ok(roomService.getRoomsByUserId(userId));
+        try {
+            RoomResponse room = (RoomResponse) roomService.getRoomByUserId(userId);
+            return ResponseEntity.ok(ApiResponse.success("Room details retrieved successfully", room));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ROOM_ERROR", "Failed to get room details: " + e.getMessage()));
+        }
     }
 
     /**

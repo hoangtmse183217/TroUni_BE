@@ -96,7 +96,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Cho phép origin từ frontend
-        configuration.setAllowedOrigins(List.of("https://app.swaggerhub.com","http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
 
         // Cho phép tất cả các HTTP methods
         configuration.addAllowedMethod("*");
@@ -156,11 +156,20 @@ public class SecurityConfig {
                                 "/auth/**",           // Auth endpoints (login, signup, logout)
                                 "/public/**",         // Public endpoints
                                 "/email-verification/**",  // Email verification endpoints
+                                "/rooms/**" ,// Room endpoints
+                                "/room-images/**",// Room-image endpoints
+                                "/reviews/**",// Review endpoints
+                                "/master-amenities/**",//Master-amenity endpoints
+                                "/payments/**",//Payments endpoints
+                                "/subscriptions/**",//Subscriptions endpoints
+                                "/packages/**",//Packages endpoints
+                                "/chat/**",// Chat Endpoints
+                                "/ws/**",// WebSocket Endpoints
                                 "/v3/api-docs/**",    // Swagger API docs
                                 "/swagger-ui/**",     // Swagger UI
                                 "/swagger-ui.html",   // Swagger UI HTML
                                 "/rooms/search",  // Room search (public)
-                                "/rooms",         // Public room listing
+                                "/rooms/**",         // Public room listing
                                 "/rooms/*/details", // Room details (public)
                                 "/rooms/*/images",  // Room images (public)
                                 "/rooms/*/summary", // Room summary (public)
@@ -172,7 +181,7 @@ public class SecurityConfig {
                                 "/roommate-posts/search/*" // Search roommate posts (public)
                         ).permitAll()
 
-                        // Tất cả các endpoint khác cần authentication (sẽ được kiểm tra bởi @PreAuthorize)
+                        // Tất cả các endpoint khác cần authentication
                         .anyRequest().authenticated()
                 )
                 // Thêm JWT filter trước UsernamePasswordAuthenticationFilter

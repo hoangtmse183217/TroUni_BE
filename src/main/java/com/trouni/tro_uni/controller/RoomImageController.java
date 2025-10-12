@@ -70,6 +70,8 @@ public class RoomImageController {
         }
     }
 
+
+
     /**
      * Delete an image from a room
      *

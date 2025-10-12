@@ -34,10 +34,10 @@ public class RoommatePost {
     @Column(name = "desired_location_text")
     private String desiredLocationText; // User-input text like "Near University of Science"
     
-    @Column(name = "budget_min", precision = 12)
+    @Column(name = "budget_min", precision = 12, scale = 0)
     private BigDecimal budgetMin;
     
-    @Column(name = "budget_max", precision = 12)
+    @Column(name = "budget_max", precision = 12, scale = 0)
     private BigDecimal budgetMax;
     
     @Column(length = 20)
