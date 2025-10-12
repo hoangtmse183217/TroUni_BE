@@ -12,6 +12,7 @@ import com.trouni.tro_uni.repository.MessageRepository;
 import com.trouni.tro_uni.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate; // Used to send messages to clients
+    private final RabbitTemplate rabbitTemplate;
 
     /**
      * Processes an incoming chat message, saves it, and sends it to the recipient.
@@ -38,7 +40,7 @@ public class ChatService {
      * @param sender  The user sending the message.
      * @param request The message payload containing recipient ID and content.
      */
-    @Transactional
+     @Transactional
     public void processMessage(User sender, ChatMessageRequest request) {
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new AppException(AuthenticationErrorCode.PROFILE_NOT_FOUND));
@@ -63,17 +65,17 @@ public class ChatService {
     /**
      * Retrieves or creates a chat room for two users.
      *
-     * @param user1 The first user.
-     * @param user2 The second user.
+     * @param sender   The first user.
+     * @param recipient The second user.
      * @return The existing or newly created ChatRoom.
      */
-    private ChatRoom getOrCreateChatRoom(User user1, User user2) {
-        return chatRoomRepository.findChatRoomByParticipants(user1, user2)
+    private ChatRoom getOrCreateChatRoom(User sender, User recipient) {
+        return chatRoomRepository.findChatRoomByParticipants(sender, recipient)
                 .orElseGet(() -> {
                     ChatRoom newChatRoom = ChatRoom.builder()
-                            .participants(Arrays.asList(user1, user2))
+                            .participants(Arrays.asList(sender, recipient))
                             .build();
-                    log.info("Creating new chat room for users {} and {}", user1.getUsername(), user2.getUsername());
+                    log.info("Creating new chat room for users {} and {}", sender.getUsername(), recipient.getUsername());
                     return chatRoomRepository.save(newChatRoom);
                 });
     }
