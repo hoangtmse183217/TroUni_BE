@@ -64,61 +64,40 @@ public class ChatService {
      * @param request The message payload containing chatRoomId and content.
      */
     @Transactional
-    public ChatMessageResponse processMessage(User sender, ChatMessageRequest request) {
+    public void processMessage(User sender, ChatMessageRequest request) {
         log.info("📨 Processing message from senderId={} to chatRoomId={}", sender.getId(), request.getChatRoomId());
 
-        // 🔹 1️⃣ Lấy ChatRoom từ DB
         ChatRoom chatRoom = chatRoomRepository.findById(request.getChatRoomId())
                 .orElseThrow(() -> new AppException(GeneralErrorCode.RESOURCE_NOT_FOUND, "Chat room not found"));
         log.info("✅ ChatRoom found: {} (ID: {})", chatRoom.getId(), chatRoom.getId());
 
-        // 🔹 2️⃣ Xác định người nhận (người còn lại trong phòng chat)
         User recipient = chatRoom.getParticipants().stream()
                 .filter(p -> !p.getId().equals(sender.getId()))
                 .findFirst()
                 .orElseThrow(() -> new AppException(AuthenticationErrorCode.PROFILE_NOT_FOUND));
         log.info("✅ Recipient found: {} (ID: {})", recipient.getUsername(), recipient.getId());
 
-        // 🔹 3️⃣ Tạo và lưu tin nhắn
-        Message message = Message.builder()
-                .chatRoom(chatRoom)
-                .sender(sender)
-                .content(request.getContent())
-                .read(false)
-                .sentAt(LocalDateTime.now())
-                .build();
-
+        // Create and save the message
+        Message message = new Message(null, chatRoom, sender, request.getContent(), false, LocalDateTime.now());
         Message savedMessage = messageRepository.save(message);
-        log.info("💾 Message saved with ID: {}", savedMessage.getId());
+        log.info("Message from {} to {} saved in chat room {}", sender.getUsername(), recipient.getUsername(), chatRoom.getId());
 
-        // 🔹 4️⃣ Tạo response DTO
-        ChatMessageResponse response = ChatMessageResponse.builder()
-                .messageId(savedMessage.getId())
-                .chatRoomId(chatRoom.getId())
-                .senderId(sender.getId())
-                .senderName(sender.getUsername())
-                .recipientId(recipient.getId())
-                .content(savedMessage.getContent())
-                .timestamp(savedMessage.getSentAt())
-                .build();
+        // Convert to DTO to send to the client
+        ChatMessageResponse response = ChatMessageResponse.fromMessage(savedMessage);
 
-        log.info("📤 Response created: {}", response);
-
-        // 🔹 5️⃣ Gửi tin nhắn tới recipient qua WebSocket
+        // Send the message to the recipient's private topic
+        // The recipient must be subscribed to /topic/user/{userId}
         try {
-            messagingTemplate.convertAndSendToUser(
-                    recipient.getUsername(), // ✅ dùng username để Spring định tuyến
-                    "/queue/messages",
-                    response
-            );
-            log.info("📨 Sent to recipient {} on /user/queue/messages", recipient.getUsername());
+            messagingTemplate.convertAndSendToUser(recipient.getId().toString(), "/topic/messages", response);
+            log.info("📨 Sent to recipient {} on /user/{}/topic/messages", recipient.getUsername(), recipient.getId());
         } catch (Exception e) {
             log.error("❌ Failed to send message via WebSocket: {}", e.getMessage(), e);
         }
 
-        // 🔹 6️⃣ Trả về response cho sender (controller sẽ gửi lại)
-        return response;
+
+
     }
+
 
 
     /**
