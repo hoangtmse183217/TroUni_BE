@@ -16,7 +16,7 @@ import java.util.UUID;
 public class ChatMessageRequest {
 
     @NotNull
-    UUID recipientId;
+    UUID chatRoomId;
 
     @NotBlank
     String content;

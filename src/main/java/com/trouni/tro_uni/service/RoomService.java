@@ -14,12 +14,14 @@ import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.RoomImage;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.exception.AppException;
+import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
 import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
 import com.trouni.tro_uni.exception.errorcode.MasterAmenityErrorCode;
 import com.trouni.tro_uni.mapper.RoomMapper;
 import com.trouni.tro_uni.repository.MasterAmenityRepository;
 import com.trouni.tro_uni.repository.RoomRepository;
 import com.trouni.tro_uni.repository.RoomImageRepository;
+import com.trouni.tro_uni.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomService {
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     RoomRepository roomRepository;
@@ -63,11 +67,15 @@ public class RoomService {
      * @return RoomResponse - Details of the created room
      * @throws AppException - If user is not authorized as landlord
      */
+    @Transactional
     public RoomResponse createRoom(User currentUser, RoomRequest request) {
+        // ✅ Load lại user từ DB để đảm bảo session còn mở
+        User owner = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new AppException(AuthenticationErrorCode.USER_NOT_FOUND));
 
         // Step 1: Create Room and save first to get ID
         Room room = Room.builder()
-                .owner(currentUser)
+                .owner(owner) // ✅ dùng entity đã attach session
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .roomType(request.getRoomType())
@@ -111,9 +119,9 @@ public class RoomService {
         }
         savedRoom.setAmenities(savedAmenities);
 
-        // Bước 4: Lưu lại Room với ảnh và tiện ích
+        // Step 4: Save again after images & amenities
         Room finalRoom = roomRepository.save(savedRoom);
-        log.info("Created new room with ID: {} by user: {}", finalRoom.getId(), currentUser.getUsername());
+        log.info("Created new room with ID: {} by user: {}", finalRoom.getId(), owner.getUsername());
         return RoomResponse.fromRoom(finalRoom);
     }
 

@@ -96,7 +96,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Cho phép origin từ frontend
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5501"));
 
         // Cho phép tất cả các HTTP methods
         configuration.addAllowedMethod("*");
@@ -173,7 +173,7 @@ public class SecurityConfig {
                                 "/rooms/*/details", // Room details (public)
                                 "/rooms/*/images",  // Room images (public)
                                 "/rooms/*/summary", // Room summary (public)
-                                "/reviews/*",         // Get reviews by room (public)
+                                "/reviews/*",         // Get reviews by room (public)3
                                 "/master-amenities",  // Get all master amenities (public)
                                 "/master-amenities/room/*", // Get amenities by room (public)
                                 "/roommate-posts",    // Get roommate posts (public)
