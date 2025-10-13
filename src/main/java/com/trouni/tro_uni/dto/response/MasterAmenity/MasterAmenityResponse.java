@@ -16,6 +16,7 @@ public class MasterAmenityResponse {
     private UUID id;
     private String name;
     private String icon;
+    private boolean active;
     /**
      * Convert MasterAmenity entity to MasterAmenityResponse DTO
      * @param amenity - MasterAmenity entity to convert
@@ -28,6 +29,7 @@ public class MasterAmenityResponse {
                 .id(amenity.getId())
                 .name(amenity.getName())
                 .icon(amenity.getIconUrl())
+                .active(amenity.getActive())
                 .build();
     }
 }

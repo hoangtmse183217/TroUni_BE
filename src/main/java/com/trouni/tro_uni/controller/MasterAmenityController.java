@@ -2,6 +2,7 @@ package com.trouni.tro_uni.controller;
 
 import com.trouni.tro_uni.dto.common.ApiResponse;
 import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
+import com.trouni.tro_uni.dto.request.masteramenity.UpdateAmenityRequest;
 import com.trouni.tro_uni.dto.response.MasterAmenity.MasterAmenityResponse;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.service.MasterAmenityService;
@@ -86,12 +87,13 @@ public class MasterAmenityController {
      * @param request - The new details for the amenity.
      * @return ResponseEntity<MasterAmenityResponse>
      */
-//    @PutMapping("/{amenityId}")
-//    public ResponseEntity<MasterAmenityResponse> updateMasterAmenity(
-//            @PathVariable UUID amenityId,
-//            @Valid @RequestBody MasterAmenityRequest request) {
-//        return ResponseEntity.ok(masterAmenityService.updateMasterAmenity(amenityId, request));
-//    }
+    @PutMapping("/{amenityId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MasterAmenityResponse> updateMasterAmenity(
+            @PathVariable UUID amenityId,
+            @Valid @RequestBody UpdateAmenityRequest request) {
+        return ResponseEntity.ok(masterAmenityService.updateMasterAmenity(amenityId, request));
+    }
 
     /**
      * Delete a master amenity.

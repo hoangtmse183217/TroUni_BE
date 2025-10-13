@@ -1,10 +1,12 @@
 package com.trouni.tro_uni.dto.request.chat;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
 
 import java.util.UUID;
 
@@ -13,11 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ChatMessageRequest {
-
-    @NotNull
-    UUID chatRoomId;
-
-    @NotBlank
-    String content;
+public class CreateChatRoomRequest {
+    @NotNull(message = "Recipient ID is required")
+    UUID recipientId;
 }
