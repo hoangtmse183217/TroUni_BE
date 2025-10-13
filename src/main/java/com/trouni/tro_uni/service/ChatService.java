@@ -15,7 +15,6 @@ import com.trouni.tro_uni.repository.MessageRepository;
 import com.trouni.tro_uni.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +34,6 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate; // Used to send messages to clients
-    private final RabbitTemplate rabbitTemplate;
 
     /**
      * Creates a new chat room between the current user and a recipient.

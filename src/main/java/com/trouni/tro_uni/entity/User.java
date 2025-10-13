@@ -116,7 +116,7 @@ public class User implements UserDetails {
      * - cascade: Khi xóa User thì cũng xóa các Room của user đó
      * - fetch: Lazy loading để tối ưu performance
      */
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private List<Room> rooms;
 
