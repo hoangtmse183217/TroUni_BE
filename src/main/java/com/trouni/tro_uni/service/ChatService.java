@@ -88,12 +88,11 @@ public class ChatService {
         // Send the message to the recipient's private topic
         // The recipient must be subscribed to /topic/user/{userId}
         try {
-            messagingTemplate.convertAndSendToUser(recipient.getId().toString(), "/topic/messages", response);
-            log.info("📨 Sent to recipient {} on /user/{}/topic/messages", recipient.getUsername(), recipient.getId());
+            messagingTemplate.convertAndSend("/topic/chatRoom/" + chatRoom.getId().toString(), response);
+            log.info("📨 Sent to chatRoom {} on /topic/chatRoom/{}", chatRoom.getId(), chatRoom.getId());
         } catch (Exception e) {
             log.error("❌ Failed to send message via WebSocket: {}", e.getMessage(), e);
         }
-
 
 
     }
