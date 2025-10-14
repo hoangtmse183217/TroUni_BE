@@ -54,6 +54,7 @@ public class UserController {
      */
 
     @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<?> getAllUsers() {
         List<User> users = userRepository.findAll();
         List<UserResponse> userResponses = users.stream()
@@ -64,6 +65,7 @@ public class UserController {
 
 
     @GetMapping("/{username}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
         User user = userRepository.findByUsername(username).orElse(null);
         if (user != null) {
@@ -83,6 +85,7 @@ public class UserController {
      * @return ResponseEntity - Kết quả kiểm tra token
      */
     @PostMapping("/check-token")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> checkToken(@RequestBody Map<String, String> request) {
         try {
             String token = request.get("token");
@@ -112,6 +115,7 @@ public class UserController {
      * @return ResponseEntity - Thống kê blacklist
      */
     @GetMapping("/blacklist-stats")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getBlacklistStats() {
         try {
             long totalBlacklisted = tokenBlacklistService.getBlacklistCount();
@@ -136,6 +140,7 @@ public class UserController {
      * @return ResponseEntity - Response chứa user đã cập nhật
      */
     @PutMapping("/me")
+    @PreAuthorize("hasAnyRole('STUDENT', 'LANDLORD', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
         try {
             User currentUser = authService.getCurrentUser();
@@ -223,6 +228,34 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("USER_HARD_DELETE_FAILED", "Failed to permanently delete user!"));
+        }
+    }
+    
+    /**
+     * API xóa tất cả record trong database trừ User và Profile (chỉ dành cho Admin)
+     * 
+     * Endpoint: DELETE /api/users/delete-all-records
+     * 
+     * Chức năng:
+     * - Xóa tất cả dữ liệu liên quan đến hệ thống
+     * - Giữ lại User và Profile để duy trì thông tin người dùng
+     * - Được sử dụng để reset database trong môi trường development
+     * 
+     * @return ResponseEntity - Response chứa thống kê số lượng record đã xóa
+     */
+    @DeleteMapping("/delete-all-records")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> deleteAllRecordsExceptUserAndProfile() {
+        try {
+            User currentUser = authService.getCurrentUser();
+            Map<String, Object> deleteStats = authService.deleteAllRecordsExceptUserAndProfile(currentUser);
+            return ResponseEntity.ok(ApiResponse.success("All records deleted successfully except User and Profile!", deleteStats));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getErrorCode(), e.getErrorMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("DELETE_ALL_RECORDS_FAILED", "Failed to delete all records!"));
         }
     }
 

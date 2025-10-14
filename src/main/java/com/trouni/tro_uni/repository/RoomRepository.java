@@ -100,4 +100,7 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
 
     @Query("SELECT COALESCE(AVG(rev.score), 0.0) FROM Review rev WHERE rev.room.owner.id = :ownerId")
     double findAverageRatingByOwner(@Param("ownerId") UUID ownerId);
+
+    @Query("SELECT COUNT(r) FROM Room r WHERE r.owner.id = :ownerId")
+    long countByOwnerId(@Param("ownerId") UUID ownerId);
 }

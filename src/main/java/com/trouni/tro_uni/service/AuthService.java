@@ -18,8 +18,25 @@ import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
 import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
 import com.trouni.tro_uni.exception.errorcode.TokenErrorCode;
+import com.trouni.tro_uni.mapper.UserMapper;
 import com.trouni.tro_uni.repository.ProfileRepository;
 import com.trouni.tro_uni.repository.UserRepository;
+import com.trouni.tro_uni.repository.BlacklistedTokenRepository;
+import com.trouni.tro_uni.repository.BookmarkRepository;
+import com.trouni.tro_uni.repository.ChatRoomRepository;
+import com.trouni.tro_uni.repository.EmailVerificationRepository;
+import com.trouni.tro_uni.repository.MasterAmenityRepository;
+import com.trouni.tro_uni.repository.MessageRepository;
+import com.trouni.tro_uni.repository.NotificationRepository;
+import com.trouni.tro_uni.repository.PackageRepository;
+import com.trouni.tro_uni.repository.PaymentRepository;
+import com.trouni.tro_uni.repository.ReportRepository;
+import com.trouni.tro_uni.repository.ReviewRepository;
+import com.trouni.tro_uni.repository.RoomImageRepository;
+import com.trouni.tro_uni.repository.RoommatePostRepository;
+import com.trouni.tro_uni.repository.RoomRepository;
+import com.trouni.tro_uni.repository.SubscriptionRepository;
+import com.trouni.tro_uni.repository.UserVerificationRepository;
 import com.trouni.tro_uni.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +55,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,6 +83,25 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;             // Mã hóa password
     private final JwtUtil jwtUtil;                             // Utility tạo JWT token
     private final EmailVerificationService emailVerificationService; // Service xác thực email
+    private final UserMapper userMapper;                       // MapStruct mapper for User
+    
+    // Additional repositories for delete all functionality
+    private final BlacklistedTokenRepository blacklistedTokenRepository;
+    private final BookmarkRepository bookmarkRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
+    private final MasterAmenityRepository masterAmenityRepository;
+    private final MessageRepository messageRepository;
+    private final NotificationRepository notificationRepository;
+    private final PackageRepository packageRepository;
+    private final PaymentRepository paymentRepository;
+    private final ReportRepository reportRepository;
+    private final ReviewRepository reviewRepository;
+    private final RoomImageRepository roomImageRepository;
+    private final RoommatePostRepository roommatePostRepository;
+    private final RoomRepository roomRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final UserVerificationRepository userVerificationRepository;
 
     /**
      * Xác thực người dùng đăng nhập
@@ -140,6 +177,10 @@ public class AuthService {
                 throw new AppException(AuthenticationErrorCode.ACCOUNT_REGISTERED_WITH_GOOGLE);
             }
             throw new AppException(AuthenticationErrorCode.EMAIL_EXISTED);
+        }
+
+        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
+            throw new AppException(AuthenticationErrorCode.USERNAME_ALREADY_EXISTS);
         }
 
         // Bước 2: Gửi OTP và lưu tạm thông tin
@@ -430,15 +471,8 @@ public class AuthService {
         // Cập nhật email (nếu có)
         validateAndUpdateEmail(targetUser, updateRequest.getEmail());
         
-        // Cập nhật role (nếu có)
-        if (updateRequest.getRole() != null) {
-            targetUser.setRole(updateRequest.getRole());
-        }
-        
-        // Cập nhật status (nếu có)
-        if (updateRequest.getStatus() != null) {
-            targetUser.setStatus(updateRequest.getStatus());
-        }
+        // Use mapper to update fields
+        userMapper.updateUserFields(updateRequest, targetUser);
         
         // Lưu user đã cập nhật
         User savedUser = userRepository.save(targetUser);
@@ -610,6 +644,132 @@ public class AuthService {
             throw e;
         } catch (Exception e) {
             log.error("Error during password reset: {}", e.getMessage());
+            throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Xóa tất cả record trong database trừ User và Profile (chỉ dành cho Admin)
+     * 
+     * Chức năng:
+     * - Xóa tất cả dữ liệu liên quan đến hệ thống
+     * - Giữ lại User và Profile để duy trì thông tin người dùng
+     * - Được sử dụng để reset database trong môi trường development
+     * 
+     * @param currentUser - User hiện tại (phải là Admin)
+     * @return Map<String, Object> - Thống kê số lượng record đã xóa
+     * @throws AppException - Khi không có quyền admin hoặc có lỗi xảy ra
+     */
+    @Transactional
+    public Map<String, Object> deleteAllRecordsExceptUserAndProfile(User currentUser) {
+        // Kiểm tra quyền admin (chỉ admin mới được thực hiện thao tác này)
+        if (currentUser.getRole() != UserRole.ADMIN) {
+            throw new AppException(AuthenticationErrorCode.ACCESS_DENIED);
+        }
+        
+        log.info("Admin {} started deleting all records except User and Profile", currentUser.getUsername());
+        
+        try {
+            Map<String, Object> deleteStats = new HashMap<>();
+            
+            // Xóa BlacklistedToken
+            long blacklistedTokenCount = blacklistedTokenRepository.count();
+            blacklistedTokenRepository.deleteAll();
+            deleteStats.put("blacklistedTokens", blacklistedTokenCount);
+            
+            // Xóa Bookmark
+            long bookmarkCount = bookmarkRepository.count();
+            bookmarkRepository.deleteAll();
+            deleteStats.put("bookmarks", bookmarkCount);
+            
+            // Xóa ChatRoom
+            long chatRoomCount = chatRoomRepository.count();
+            chatRoomRepository.deleteAll();
+            deleteStats.put("chatRooms", chatRoomCount);
+            
+            // Xóa EmailVerification
+            long emailVerificationCount = emailVerificationRepository.count();
+            emailVerificationRepository.deleteAll();
+            deleteStats.put("emailVerifications", emailVerificationCount);
+            
+            // Xóa MasterAmenity
+            long masterAmenityCount = masterAmenityRepository.count();
+            masterAmenityRepository.deleteAll();
+            deleteStats.put("masterAmenities", masterAmenityCount);
+            
+            // Xóa Message
+            long messageCount = messageRepository.count();
+            messageRepository.deleteAll();
+            deleteStats.put("messages", messageCount);
+            
+            // Xóa Notification
+            long notificationCount = notificationRepository.count();
+            notificationRepository.deleteAll();
+            deleteStats.put("notifications", notificationCount);
+            
+            // Xóa Package
+            long packageCount = packageRepository.count();
+            packageRepository.deleteAll();
+            deleteStats.put("packages", packageCount);
+            
+            // Xóa Payment
+            long paymentCount = paymentRepository.count();
+            paymentRepository.deleteAll();
+            deleteStats.put("payments", paymentCount);
+            
+            // Xóa Report
+            long reportCount = reportRepository.count();
+            reportRepository.deleteAll();
+            deleteStats.put("reports", reportCount);
+            
+            // Xóa Review
+            long reviewCount = reviewRepository.count();
+            reviewRepository.deleteAll();
+            deleteStats.put("reviews", reviewCount);
+            
+            // Xóa RoomImage
+            long roomImageCount = roomImageRepository.count();
+            roomImageRepository.deleteAll();
+            deleteStats.put("roomImages", roomImageCount);
+            
+            // Xóa RoommatePost
+            long roommatePostCount = roommatePostRepository.count();
+            roommatePostRepository.deleteAll();
+            deleteStats.put("roommatePosts", roommatePostCount);
+            
+            // Xóa Room
+            long roomCount = roomRepository.count();
+            roomRepository.deleteAll();
+            deleteStats.put("rooms", roomCount);
+            
+            // Xóa Subscription
+            long subscriptionCount = subscriptionRepository.count();
+            subscriptionRepository.deleteAll();
+            deleteStats.put("subscriptions", subscriptionCount);
+            
+            // Xóa UserVerification
+            long userVerificationCount = userVerificationRepository.count();
+            userVerificationRepository.deleteAll();
+            deleteStats.put("userVerifications", userVerificationCount);
+            
+            // Tính tổng số record đã xóa
+            long totalDeleted = blacklistedTokenCount + bookmarkCount + chatRoomCount + 
+                              emailVerificationCount + masterAmenityCount + messageCount +
+                              notificationCount + packageCount + paymentCount + reportCount +
+                              reviewCount + roomImageCount + roommatePostCount + roomCount +
+                              subscriptionCount + userVerificationCount;
+            
+            deleteStats.put("totalDeleted", totalDeleted);
+            deleteStats.put("userCount", userRepository.count());
+            deleteStats.put("profileCount", profileRepository.count());
+            
+            log.info("Admin {} successfully deleted {} records. User count: {}, Profile count: {}", 
+                    currentUser.getUsername(), totalDeleted, userRepository.count(), profileRepository.count());
+            
+            return deleteStats;
+            
+        } catch (Exception e) {
+            log.error("Error during delete all records by admin {}: {}", currentUser.getUsername(), e.getMessage());
             throw new AppException(GeneralErrorCode.INTERNAL_SERVER_ERROR);
         }
     }

@@ -3,6 +3,7 @@ package com.trouni.tro_uni.dto.response.room;
 import com.trouni.tro_uni.dto.response.MasterAmenity.MasterAmenityResponse;
 import com.trouni.tro_uni.dto.response.UserResponse;
 import com.trouni.tro_uni.dto.response.review.ReviewResponse;
+import com.trouni.tro_uni.entity.Review;
 import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.enums.RoomType;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -93,7 +95,10 @@ public class RoomResponse {
                 .averageRating(calculateAverageRating(room))
                 .totalReviews(room.getReviews() != null ? room.getReviews().size() : 0)
                 .recentReviews(room.getReviews() != null ? room.getReviews().stream()
-                        .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
+                        .sorted(Comparator.comparing(
+                                Review::getCreatedAt,
+                                Comparator.nullsLast(Comparator.reverseOrder())
+                        ))
                         .limit(3)
                         .map(ReviewResponse::fromReview)
                         .collect(Collectors.toList()) : null)

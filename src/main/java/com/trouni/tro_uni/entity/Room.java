@@ -64,7 +64,7 @@ public class Room {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
     
-    @Column(name = "price_per_month", precision = 12, nullable = false)
+    @Column(name = "price_per_month", precision = 12, scale = 0, nullable = false)
     private BigDecimal pricePerMonth;
     
     @Column(name = "area_sqm", precision = 5, scale = 2)

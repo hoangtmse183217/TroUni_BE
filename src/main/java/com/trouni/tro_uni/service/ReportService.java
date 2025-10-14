@@ -5,6 +5,7 @@ import com.trouni.tro_uni.dto.response.ReportResponse;
 import com.trouni.tro_uni.dto.response.ReportedContentResponse;
 import com.trouni.tro_uni.entity.Report;
 import com.trouni.tro_uni.entity.User;
+import com.trouni.tro_uni.mapper.ReportMapper;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
@@ -18,14 +19,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * ReportService - Service xử lý các thao tác báo cáo vi phạm
- *
+
  * Chức năng chính:
  * - Tạo báo cáo vi phạm
  * - Lấy danh sách báo cáo
@@ -42,6 +45,7 @@ public class ReportService {
     private final RoomRepository roomRepository;
     private final RoommatePostRepository roommatePostRepository;
     private final ReviewRepository reviewRepository;
+    private final ReportMapper reportMapper;
     
     private static final List<String> VALID_CONTENT_TYPES = Arrays.asList(
             "room", "user", "roommate_post", "review"
@@ -69,19 +73,17 @@ public class ReportService {
         List<Report> existingReports = reportRepository.findByReportedContentTypeAndReportedContentId(
                 request.getReportedContentType(), request.getReportedContentId());
         
-        boolean alreadyReported = existingReports.stream()
-                .anyMatch(report -> report.getReporter().getId().equals(currentUser.getId()));
+        boolean alreadyReported = existingReports != null && existingReports.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(report -> report.getReporter() != null && 
+                        report.getReporter().getId().equals(currentUser.getId()));
         
         if (alreadyReported) {
             throw new AppException(GeneralErrorCode.RESOURCE_ALREADY_EXISTS,
                     "You have already reported this content");
         }
         
-        Report report = new Report();
-        report.setReporter(currentUser);
-        report.setReportedContentType(request.getReportedContentType());
-        report.setReportedContentId(request.getReportedContentId());
-        report.setReason(request.getReason());
+        Report report = reportMapper.toEntity(request, currentUser);
         report.setStatus("pending");
         
         report = reportRepository.save(report);
@@ -103,14 +105,15 @@ public class ReportService {
         User currentUser = getCurrentUser();
         List<Report> reports = reportRepository.findByReporter(currentUser);
         
-        return reports.stream()
+        return reports != null ? reports.stream()
+                .filter(Objects::nonNull)
                 .map(report -> {
                     ReportResponse response = ReportResponse.fromReport(report);
                     response.setReportedContent(getReportedContentInfo(
                             report.getReportedContentType(), report.getReportedContentId()));
                     return response;
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
     
     /**
@@ -128,7 +131,7 @@ public class ReportService {
         
         Page<Report> reports;
         if (status != null && !status.isEmpty()) {
-            reports = reportRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+            reports = reportRepository.findByStatus(status, pageable);
         } else {
             reports = reportRepository.findAll(pageable);
         }
@@ -165,7 +168,7 @@ public class ReportService {
                     "Invalid status. Valid statuses: " + String.join(", ", validStatuses));
         }
         
-        report.setStatus(newStatus);
+        reportMapper.updateStatus(newStatus, report);
         report = reportRepository.save(report);
         
         log.info("User {} updated report {} status to {}", 
@@ -189,72 +192,58 @@ public class ReportService {
      * Kiểm tra nội dung có tồn tại không
      */
     private boolean contentExists(String contentType, UUID contentId) {
-        switch (contentType) {
-            case "room":
-                return roomRepository.existsById(contentId);
-            case "user":
-                return userRepository.existsById(contentId);
-            case "roommate_post":
-                return roommatePostRepository.existsById(contentId);
-            case "review":
-                return reviewRepository.existsById(contentId);
-            default:
-                return false;
-        }
+        return switch (contentType) {
+            case "room" -> roomRepository.existsById(contentId);
+            case "user" -> userRepository.existsById(contentId);
+            case "roommate_post" -> roommatePostRepository.existsById(contentId);
+            case "review" -> reviewRepository.existsById(contentId);
+            default -> false;
+        };
     }
     
     /**
      * Lấy thông tin nội dung bị báo cáo
      */
     private ReportedContentResponse getReportedContentInfo(String contentType, UUID contentId) {
-        switch (contentType) {
-            case "room":
-                return roomRepository.findById(contentId)
-                        .map(room -> ReportedContentResponse.builder()
-                                .contentId(contentId)
-                                .contentType(contentType)
-                                .title(room.getTitle())
-                                .summary("Room in " + room.getCity() + ", " + room.getDistrict())
-                                .exists(true)
-                                .build())
-                        .orElse(createNotFoundContent(contentType, contentId));
-
-            case "user":
-                return userRepository.findById(contentId)
-                        .map(user -> ReportedContentResponse.builder()
-                                .contentId(contentId)
-                                .contentType(contentType)
-                                .title(user.getUsername())
-                                .summary("User account")
-                                .exists(true)
-                                .build())
-                        .orElse(createNotFoundContent(contentType, contentId));
-
-            case "roommate_post":
-                return roommatePostRepository.findById(contentId)
-                        .map(post -> ReportedContentResponse.builder()
-                                .contentId(contentId)
-                                .contentType(contentType)
-                                .title(post.getTitle())
-                                .summary("Roommate seeking post")
-                                .exists(true)
-                                .build())
-                        .orElse(createNotFoundContent(contentType, contentId));
-
-            case "review":
-                return reviewRepository.findById(contentId)
-                        .map(review -> ReportedContentResponse.builder()
-                                .contentId(contentId)
-                                .contentType(contentType)
-                                .title("Review")
-                                .summary("Room review with score: " + review.getScore())
-                                .exists(true)
-                                .build())
-                        .orElse(createNotFoundContent(contentType, contentId));
-
-            default:
-                return createNotFoundContent(contentType, contentId);
-        }
+        return switch (contentType) {
+            case "room" -> roomRepository.findById(contentId)
+                    .map(room -> ReportedContentResponse.builder()
+                            .contentId(contentId)
+                            .contentType(contentType)
+                            .title(room.getTitle())
+                            .summary("Room in " + room.getCity() + ", " + room.getDistrict())
+                            .exists(true)
+                            .build())
+                    .orElse(createNotFoundContent(contentType, contentId));
+            case "user" -> userRepository.findById(contentId)
+                    .map(user -> ReportedContentResponse.builder()
+                            .contentId(contentId)
+                            .contentType(contentType)
+                            .title(user.getUsername())
+                            .summary("User account")
+                            .exists(true)
+                            .build())
+                    .orElse(createNotFoundContent(contentType, contentId));
+            case "roommate_post" -> roommatePostRepository.findById(contentId)
+                    .map(post -> ReportedContentResponse.builder()
+                            .contentId(contentId)
+                            .contentType(contentType)
+                            .title(post.getTitle())
+                            .summary("Roommate seeking post")
+                            .exists(true)
+                            .build())
+                    .orElse(createNotFoundContent(contentType, contentId));
+            case "review" -> reviewRepository.findById(contentId)
+                    .map(review -> ReportedContentResponse.builder()
+                            .contentId(contentId)
+                            .contentType(contentType)
+                            .title("Review")
+                            .summary("Room review with score: " + review.getScore())
+                            .exists(true)
+                            .build())
+                    .orElse(createNotFoundContent(contentType, contentId));
+            default -> createNotFoundContent(contentType, contentId);
+        };
     }
     
     /**

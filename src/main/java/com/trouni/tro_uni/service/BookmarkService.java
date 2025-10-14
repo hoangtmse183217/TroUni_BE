@@ -18,13 +18,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * BookmarkService - Service xử lý các thao tác bookmark
- * 
+
  * Chức năng chính:
  * - Bookmark/unbookmark phòng
  * - Lấy danh sách phòng đã bookmark
@@ -87,7 +89,7 @@ public class BookmarkService {
      */
     public Page<BookmarkResponse> getUserBookmarks(Pageable pageable) {
         User currentUser = getCurrentUser();
-        Page<Bookmark> bookmarks = bookmarkRepository.findByUserOrderByCreatedAtDesc(currentUser, pageable);
+        Page<Bookmark> bookmarks = bookmarkRepository.findByUser(currentUser, pageable);
         
         return bookmarks.map(BookmarkResponse::fromBookmark);
     }
@@ -99,9 +101,10 @@ public class BookmarkService {
         User currentUser = getCurrentUser();
         List<Bookmark> bookmarks = bookmarkRepository.findByUser(currentUser);
         
-        return bookmarks.stream()
+        return bookmarks != null ? bookmarks.stream()
+                .filter(Objects::nonNull)
                 .map(BookmarkResponse::fromBookmark)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
     }
     
     /**

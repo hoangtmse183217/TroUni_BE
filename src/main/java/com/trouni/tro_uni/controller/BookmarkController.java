@@ -20,7 +20,7 @@ import java.util.UUID;
 
 /**
  * BookmarkController - Controller xử lý các API bookmark
- * 
+
  * Chức năng chính:
  * - Bookmark/unbookmark phòng (dành cho tất cả user roles)
  * - Lấy danh sách phòng đã bookmark
@@ -30,7 +30,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/bookmarks")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
+
 public class BookmarkController {
     
     private final BookmarkService bookmarkService;
@@ -43,6 +43,7 @@ public class BookmarkController {
      * @return ResponseEntity - Kết quả bookmark
      */
     @PostMapping
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> bookmarkRoom(@Valid @RequestBody BookmarkRequest request) {
         try {
             BookmarkResponse bookmark = bookmarkService.bookmarkRoom(request.getRoomId());
@@ -62,6 +63,7 @@ public class BookmarkController {
      * @return ResponseEntity - Kết quả unbookmark
      */
     @DeleteMapping("/{roomId}")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> unbookmarkRoom(@PathVariable UUID roomId) {
         try {
             bookmarkService.unbookmarkRoom(roomId);
@@ -81,6 +83,7 @@ public class BookmarkController {
      * @return ResponseEntity - Kết quả toggle
      */
     @PostMapping("/{roomId}/toggle")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<?> toggleBookmark(@PathVariable UUID roomId) {
         try {
             BookmarkResponse result = bookmarkService.toggleBookmark(roomId);
@@ -105,6 +108,7 @@ public class BookmarkController {
      * @return ResponseEntity - Danh sách bookmark có phân trang
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
     public ResponseEntity<?> getUserBookmarks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -128,6 +132,7 @@ public class BookmarkController {
      * @return ResponseEntity - Danh sách tất cả bookmark
      */
     @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
     public ResponseEntity<?> getAllUserBookmarks() {
         try {
             List<BookmarkResponse> bookmarks = bookmarkService.getAllUserBookmarks();
@@ -147,6 +152,7 @@ public class BookmarkController {
      * @return ResponseEntity - Trạng thái bookmark
      */
     @GetMapping("/{roomId}/status")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
     public ResponseEntity<?> checkBookmarkStatus(@PathVariable UUID roomId) {
         try {
             boolean isBookmarked = bookmarkService.isRoomBookmarked(roomId);

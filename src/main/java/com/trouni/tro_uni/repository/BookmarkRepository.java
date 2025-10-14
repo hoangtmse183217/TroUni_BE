@@ -18,6 +18,8 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, BookmarkId> 
     
     List<Bookmark> findByRoom(Room room);
     
+    Page<Bookmark> findByUser(User user, Pageable pageable);
+    
     Page<Bookmark> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
     
     boolean existsByUserAndRoom(User user, Room room);

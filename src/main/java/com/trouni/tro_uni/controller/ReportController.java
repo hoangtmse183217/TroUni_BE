@@ -21,7 +21,7 @@ import java.util.UUID;
 
 /**
  * ReportController - Controller xử lý các API báo cáo vi phạm
- * 
+
  * Chức năng chính:
  * - Tạo báo cáo vi phạm
  * - Lấy danh sách báo cáo
@@ -32,7 +32,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/reports")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class ReportController {
     
     private final ReportService reportService;

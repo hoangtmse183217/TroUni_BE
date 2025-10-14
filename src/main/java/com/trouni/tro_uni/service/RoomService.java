@@ -13,18 +13,22 @@ import com.trouni.tro_uni.entity.MasterAmenity;
 import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.RoomImage;
 import com.trouni.tro_uni.entity.User;
-import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
+import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
 import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
+import com.trouni.tro_uni.exception.errorcode.MasterAmenityErrorCode;
+import com.trouni.tro_uni.mapper.RoomMapper;
 import com.trouni.tro_uni.repository.MasterAmenityRepository;
 import com.trouni.tro_uni.repository.RoomRepository;
 import com.trouni.tro_uni.repository.RoomImageRepository;
+import com.trouni.tro_uni.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,20 +46,297 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomService {
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
-    private RoomRepository roomRepository;
+    RoomRepository roomRepository;
+
+    RoomMapper roomMapper;
 
     @Autowired
-    private RoomImageRepository roomImageRepository;
-    
+    RoomImageRepository roomImageRepository;
+
     MasterAmenityRepository masterAmenityRepository;
 
-    // ================== ORIGINAL SEARCH AND FILTER METHODS (from main branch) ==================
+    /**
+     * Create a new room listing
+     *
+     * @param currentUser - The landlord user creating the room
+     * @param request     - Room creation details including title, price, location, etc
+     * @return RoomResponse - Details of the created room
+     * @throws AppException - If user is not authorized as landlord
+     */
+    @Transactional
+    public RoomResponse createRoom(User currentUser, RoomRequest request) {
+        // ✅ Load lại user từ DB để đảm bảo session còn mở
+        User owner = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new AppException(AuthenticationErrorCode.USER_NOT_FOUND));
+
+        // Step 1: Create Room and save first to get ID
+        Room room = Room.builder()
+                .owner(owner) // ✅ dùng entity đã attach session
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .roomType(request.getRoomType())
+                .streetAddress(request.getStreetAddress())
+                .city(request.getCity())
+                .district(request.getDistrict())
+                .ward(request.getWard())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .pricePerMonth(request.getPricePerMonth())
+                .areaSqm(request.getAreaSqm())
+                .status("available")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Room savedRoom = roomRepository.save(room); // Save first to get ID
+
+        // Step 2: Process List<String> to RoomImage
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<RoomImage> savedImages = request.getImages().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(url -> {
+                        RoomImage image = new RoomImage();
+                        image.setImageUrl(url);
+                        image.setPrimary(false);
+                        image.setRoom(savedRoom); // Room now has ID
+                        return roomImageRepository.save(image);
+                    })
+                    .collect(Collectors.toList());
+            savedRoom.setImages(savedImages);
+        }
+
+        // Step 3: Process amenities from AmenityRequest to MasterAmenity
+        List<MasterAmenity> savedAmenities = new ArrayList<>();
+        if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
+            savedAmenities = request.getAmenities().stream()
+                    .filter(dto -> dto != null && dto.getName() != null && !dto.getName().trim().isEmpty())
+                    .map(dto -> getOrCreateMasterAmenity(dto.getName(), dto.getIcon()))
+                    .collect(Collectors.toList());
+        }
+        savedRoom.setAmenities(savedAmenities);
+
+        // Step 4: Save again after images & amenities
+        Room finalRoom = roomRepository.save(savedRoom);
+        log.info("Created new room with ID: {} by user: {}", finalRoom.getId(), owner.getUsername());
+        return RoomResponse.fromRoom(finalRoom);
+    }
+
 
     /**
-     * Search rooms with multiple filters: location, price range, roomType
+     * Get room details by ID
+     * <p>
+     *
+     * @param roomId - Unique identifier of the room
+     * @return RoomResponse - Room details including images and amenities
+     * @throws AppException - When room is not found
      */
+    public RoomResponse getRoomById(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        room.setViewCount(room.getViewCount() + 1);
+        roomRepository.save(room);
+
+        log.info("Retrieved room details for ID: {}", roomId);
+        return RoomResponse.fromRoom(room); // Truyền thêm roomRepository
+    }
+
+    /**
+     * Lấy danh sách ảnh của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về danh sách ảnh rỗng.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
+     */
+    @Transactional(readOnly = true)
+    public RoomImagesResponse getRoomImages(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Lấy danh sách ảnh trực tiếp từ đối tượng room đã được fetch
+        List<RoomImageResponse> imageResponses = room.getImages().stream()
+                .map(RoomImageResponse::fromRoomImage) // Dùng lại phương thức mapping của bạn
+                .collect(Collectors.toList());
+
+        return new RoomImagesResponse(imageResponses);
+    }
+
+    /**
+     * Update room information
+     * <p>
+     *
+     * @param currentUser - The landlord user updating the room
+     * @param roomId      - ID of the room to update
+     * @param request     - Updated room details
+     * @return RoomResponse - Updated room information
+     * @throws AppException - When room is not found or user is not the owner
+     */
+    public RoomResponse updateRoom(User currentUser, UUID roomId, UpdateRoomRequest request) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        if (!room.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
+        }
+
+        // Cập nhật thông tin cơ bản
+        room.setTitle(request.getTitle());
+        room.setDescription(request.getDescription());
+        room.setRoomType(request.getRoomType());
+        room.setStreetAddress(request.getStreetAddress());
+        room.setCity(request.getCity());
+        room.setDistrict(request.getDistrict());
+        room.setWard(request.getWard());
+        room.setLatitude(request.getLatitude());
+        room.setLongitude(request.getLongitude());
+        room.setPricePerMonth(request.getPricePerMonth());
+        room.setAreaSqm(request.getAreaSqm());
+        room.setStatus(request.getStatus());
+        room.setUpdatedAt(LocalDateTime.now());
+
+        // Xử lý ảnh từ List<String> → RoomImage
+        List<RoomImage> savedImages = request.getImages().stream()
+                .map(url -> {
+                    RoomImage image = new RoomImage();
+                    image.setImageUrl(url);
+                    image.setPrimary(false);
+                    image.setRoom(room);
+                    return roomImageRepository.save(image);
+                })
+                .collect(Collectors.toList());
+        room.setImages(savedImages);
+
+        // ✅ Xử lý tiện ích từ AmenityRequest → Amenity
+        List<MasterAmenity> savedAmenities = new ArrayList<>();
+        for (MasterAmenityRequest amenityRequest : request.getAmenities()) {
+            MasterAmenity amenity = new MasterAmenity();
+            amenity.setName(amenityRequest.getName());
+            amenity.setIconUrl(amenityRequest.getIcon());
+            savedAmenities.add(masterAmenityRepository.save(amenity));
+        }
+        room.setAmenities(savedAmenities);
+
+        Room updatedRoom = roomRepository.save(room);
+        log.info("Updated room with ID: {} by user: {}", roomId, currentUser.getUsername());
+        return RoomResponse.fromRoom(updatedRoom);
+    }
+
+    /**
+     * Lấy tóm tắt thông tin của một phòng theo roomId (dạng mostSignificantBits của UUID).
+     * Nếu không tìm thấy phòng sẽ trả về null.
+     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
+     */
+    @Transactional(readOnly = true)
+    public RoomSummaryResponse getRoomSummary(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Kiểm tra xem phòng có public không
+        if (!"available".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND); // Coi như không tìm thấy
+        }
+
+        return toRoomSummaryResponse(room);
+    }
+
+    /**
+     * Get all rooms owned by a specific user
+     * <p>
+     *
+     * @param userId - UUID of the user/owner
+     * @return List<RoomResponse> - List of rooms owned by the user
+     * @throws AppException - When no rooms found for the user
+     */
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomByUserId(UUID userId) {
+        List<Room> rooms = roomRepository.findByOwnerId(userId);
+
+        if (rooms.isEmpty()) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
+        }
+
+        log.info("Retrieved {} rooms for user ID: {}", rooms.size(), userId);
+        return rooms.stream()
+                .map(RoomResponse::fromRoom)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Delete a room listing
+     * <p>
+     *
+     * @param currentUser - The landlord user deleting the room
+     * @param roomId      - ID of the room to delete
+     * @throws AppException - When room is not found or user is not the owner
+     */
+    public void deleteRoom(User currentUser, UUID roomId) {
+        Room room = roomRepository.findById(roomId).
+                orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        if (!room.getOwner().getId().equals(currentUser.getId())) {
+            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
+        }
+
+        roomRepository.delete(room);
+        log.info("Deleted room with ID: {} by user: {}", roomId, currentUser.getUsername());
+    }
+
+    /**
+     * Get paginated list of available rooms
+     * <p>
+     *
+     * @param pageable - Pagination information
+     * @return Page<RoomResponse> - Paginated list of rooms
+     */
+    public Page<RoomResponse> getAllRooms(Pageable pageable) {
+        return roomRepository.findByStatus("available", pageable)
+                .map(RoomResponse::fromRoom);
+    }
+
+    /**
+     * Get all rooms without pagination
+     *
+     * @return List of RoomResponse containing all rooms
+     */
+    public List<RoomResponse> getAllRooms() {
+        return roomRepository.findAll().stream()
+                .map(RoomResponse::fromRoom)
+                .collect(Collectors.toList());
+    }
+
+    // ================== HELPER METHODS ==================
+
+    /**
+     * Get or create MasterAmenity by name to avoid duplicates
+     */
+    private MasterAmenity getOrCreateMasterAmenity(String name, String iconUrl) {
+        String amenityName = name.trim();
+
+        // Check if amenity already exists by name
+        Optional<MasterAmenity> existingAmenity = masterAmenityRepository.findByName(amenityName);
+        if (existingAmenity.isPresent()) {
+            log.info("Using existing MasterAmenity: {}", amenityName);
+            return existingAmenity.get();
+        } else {
+            // Create new amenity only if it doesn't exist
+            try {
+                log.info("Creating new MasterAmenity: {}", amenityName);
+                MasterAmenity amenity = new MasterAmenity();
+                amenity.setName(amenityName);
+                amenity.setIconUrl(iconUrl);
+                amenity.setActive(true);
+                return masterAmenityRepository.save(amenity);
+            } catch (DataIntegrityViolationException e) {
+                // Handle case where amenity was created by another thread
+                log.warn("MasterAmenity '{}' was created by another process, retrieving existing one", amenityName);
+                return masterAmenityRepository.findByName(amenityName)
+                        .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
+            }
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<RoomListItemResponse> searchRooms(RoomSearchRequest request) {
 
@@ -83,6 +364,7 @@ public class RoomService {
                 .map(this::toRoomListItemResponse)
                 .collect(Collectors.toList());
     }
+
     /**
      * Get all public rooms
      */
@@ -92,226 +374,6 @@ public class RoomService {
         List<Room> publicRooms = roomRepository.findByStatus("available");
         return publicRooms.stream()
                 .map(this::toRoomListItemResponse)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Lấy tóm tắt thông tin của một phòng theo roomId (dạng mostSignificantBits của UUID).
-     * Nếu không tìm thấy phòng sẽ trả về null.
-     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
-     */
-    @Transactional(readOnly = true)
-    public RoomSummaryResponse getRoomSummary(UUID roomId) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
-
-        // Kiểm tra xem phòng có public không
-        if (!"available".equalsIgnoreCase(room.getStatus())) {
-            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND); // Coi như không tìm thấy
-        }
-
-        return toRoomSummaryResponse(room);
-    }
-
-
-    /**
-     * Lấy danh sách ảnh của một phòng theo roomId (dạng mostSignificantBits của UUID).
-     * Nếu không tìm thấy phòng sẽ trả về danh sách ảnh rỗng.
-     * Có xử lý ngoại lệ khi không tìm thấy phòng hoặc lỗi hệ thống.
-     */
-    @Transactional(readOnly = true)
-    public RoomImagesResponse getRoomImages(UUID roomId) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
-
-        // Lấy danh sách ảnh trực tiếp từ đối tượng room đã được fetch
-        List<RoomImageResponse> imageResponses = room.getImages().stream()
-                .map(RoomImageResponse::fromRoomImage) // Dùng lại phương thức mapping của bạn
-                .collect(Collectors.toList());
-
-        return new RoomImagesResponse(imageResponses);
-    }
-
-    // ================== NEW CRUD METHODS (from nguyenvuong-dev branch) ==================
-
-    /**
-     * Create a new room listing
-     *
-     * @param currentUser - The landlord user creating the room
-     * @param request     - Room creation details including title, price, location, etc
-     * @return RoomResponse - Details of the created room
-     * @throws AppException - If user is not authorized as landlord
-     */
-    public RoomResponse createRoom(User currentUser, RoomRequest request) {
-        if (currentUser.getRole() != UserRole.LANDLORD) {
-            throw new AppException(RoomErrorCode.NOT_LANDLORD);
-        }
-
-        // Step 1: Create Room and save first to get ID
-        Room room = Room.builder()
-                .owner(currentUser)
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .roomType(request.getRoomType())
-                .streetAddress(request.getStreetAddress())
-                .city(request.getCity())
-                .district(request.getDistrict())
-                .ward(request.getWard())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
-                .pricePerMonth(request.getPricePerMonth())
-                .areaSqm(request.getAreaSqm())
-                .status("available")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        Room savedRoom = roomRepository.save(room); // Save first to get ID
-
-        // Step 2: Process List<String> to RoomImage
-        List<RoomImage> savedImages = request.getImages().stream()
-                .map(url -> {
-                    RoomImage image = new RoomImage();
-                    image.setImageUrl(url);
-                    image.setPrimary(false);
-                    image.setRoom(savedRoom); // Room now has ID
-                    return roomImageRepository.save(image);
-                })
-                .collect(Collectors.toList());
-        savedRoom.setImages(savedImages);
-
-        // Step 3: Process amenities from AmenityRequest to MasterAmenity
-        List<MasterAmenity> savedAmenities = request.getAmenities().stream()
-                .map(dto -> {
-                    MasterAmenity amenity = new MasterAmenity();
-                    amenity.setName(dto.getName());
-                    amenity.setIconUrl(dto.getIcon());
-                    return masterAmenityRepository.save(amenity);
-                })
-                .collect(Collectors.toList());
-        savedRoom.setAmenities(savedAmenities);
-
-        // Step 4: Save Room again with images and amenities
-        Room finalRoom = roomRepository.save(savedRoom);
-        log.info("Created new room with ID: {} by user: {}", finalRoom.getId(), currentUser.getUsername());
-        return RoomResponse.fromRoom(finalRoom);
-    }
-
-    /**
-     * Get room details by ID (UUID version)
-     *
-     * @param roomId - Unique identifier of the room
-     * @return RoomResponse - Room details including images and amenities
-     * @throws AppException - When room is not found
-     */
-    public RoomResponse getRoomById(UUID roomId) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
-
-        room.setViewCount(room.getViewCount() + 1);
-        roomRepository.save(room);
-
-        log.info("Retrieved room details for ID: {}", roomId);
-        return RoomResponse.fromRoom(room);
-    }
-
-    /**
-     * Update room information
-     *
-     * @param currentUser - The landlord user updating the room
-     * @param roomId      - ID of the room to update
-     * @param request     - Updated room details
-     * @return RoomResponse - Updated room information
-     * @throws AppException - When room is not found or user is not the owner
-     */
-    public RoomResponse updateRoom(User currentUser, UUID roomId, UpdateRoomRequest request) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
-
-        if (!room.getOwner().getId().equals(currentUser.getId())) {
-            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
-        }
-
-        // Update basic information
-        room.setTitle(request.getTitle());
-        room.setDescription(request.getDescription());
-        room.setRoomType(request.getRoomType());
-        room.setStreetAddress(request.getStreetAddress());
-        room.setCity(request.getCity());
-        room.setDistrict(request.getDistrict());
-        room.setWard(request.getWard());
-        room.setLatitude(request.getLatitude());
-        room.setLongitude(request.getLongitude());
-        room.setPricePerMonth(request.getPricePerMonth());
-        room.setAreaSqm(request.getAreaSqm());
-        room.setStatus(request.getStatus());
-        room.setUpdatedAt(LocalDateTime.now());
-
-        // Process List<String> to RoomImage
-        List<RoomImage> savedImages = request.getImages().stream()
-                .map(url -> {
-                    RoomImage image = new RoomImage();
-                    image.setImageUrl(url);
-                    image.setPrimary(false);
-                    image.setRoom(room);
-                    return roomImageRepository.save(image);
-                })
-                .collect(Collectors.toList());
-        room.setImages(savedImages);
-
-        // Process amenities from AmenityRequest to Amenity
-        List<MasterAmenity> savedAmenities = new ArrayList<>();
-        for (MasterAmenityRequest amenityRequest : request.getAmenities()) {
-            MasterAmenity amenity = new MasterAmenity();
-            amenity.setName(amenityRequest.getName());
-            amenity.setIconUrl(amenityRequest.getIcon());
-            savedAmenities.add(masterAmenityRepository.save(amenity));
-        }
-        room.setAmenities(savedAmenities);
-
-        Room updatedRoom = roomRepository.save(room);
-        log.info("Updated room with ID: {} by user: {}", roomId, currentUser.getUsername());
-        return RoomResponse.fromRoom(updatedRoom);
-    }
-
-    /**
-     * Delete a room listing
-     *
-     * @param currentUser - The landlord user deleting the room
-     * @param roomId      - ID of the room to delete
-     * @throws AppException - When room is not found or user is not the owner
-     */
-    public void deleteRoom(User currentUser, UUID roomId) {
-        Room room = roomRepository.findById(roomId).
-                orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
-
-        if (!room.getOwner().getId().equals(currentUser.getId())) {
-            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
-        }
-
-        roomRepository.delete(room);
-        log.info("Deleted room with ID: {} by user: {}", roomId, currentUser.getUsername());
-    }
-
-    /**
-     * Get paginated list of available rooms
-     *
-     * @param pageable - Pagination information
-     * @return Page<RoomResponse> - Paginated list of rooms
-     */
-    public Page<RoomResponse> getAllRooms(Pageable pageable) {
-        return roomRepository.findByStatus("available", pageable)
-                .map(RoomResponse::fromRoom);
-    }
-
-    /**
-     * Get all rooms without pagination (UUID version)
-     *
-     * @return List of RoomResponse containing all rooms
-     */
-    public List<RoomResponse> getAllRooms() {
-        return roomRepository.findAll().stream()
-                .map(RoomResponse::fromRoom)
                 .collect(Collectors.toList());
     }
 
@@ -350,7 +412,7 @@ public class RoomService {
                     .filter(RoomImage::isPrimary)
                     .findFirst()
                     .map(RoomImage::getImageUrl)
-                    .orElse(room.getImages().get(0).getImageUrl());
+                    .orElse(room.getImages().getFirst().getImageUrl());
         }
         return null;
     }

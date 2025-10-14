@@ -1,5 +1,6 @@
 package com.trouni.tro_uni.controller;
 
+import com.trouni.tro_uni.dto.common.ApiResponse;
 import com.trouni.tro_uni.dto.request.RoomSearchRequest;
 import com.trouni.tro_uni.dto.request.room.RoomRequest;
 import com.trouni.tro_uni.dto.request.room.UpdateRoomRequest;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/rooms")
+@RequestMapping("/rooms")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomController {
@@ -37,29 +38,54 @@ public class RoomController {
     // Tìm phòng cơ bản + filter
     @PreAuthorize("permitAll()")
     @GetMapping("/search")
-    public ResponseEntity<List<RoomListItemResponse>> searchRooms(RoomSearchRequest request) {
-        List<RoomListItemResponse> rooms = roomService.searchRooms(request);
-        return ResponseEntity.ok(rooms);
+    public ResponseEntity<?> searchRooms(RoomSearchRequest request) {
+        try {
+            List<RoomListItemResponse> rooms = roomService.searchRooms(request);
+            return ResponseEntity.ok(ApiResponse.success("Rooms search completed successfully", rooms));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("SEARCH_ROOMS_ERROR", "Failed to search rooms: " + e.getMessage()));
+        }
     }
 
     // Danh sách phòng công khai
     @GetMapping
-    public ResponseEntity<List<RoomListItemResponse>> getPublicRooms() {
-        return ResponseEntity.ok(roomService.getPublicRooms());
+    public ResponseEntity<?> getPublicRooms() {
+        try {
+            List<RoomListItemResponse> rooms = roomService.getPublicRooms();
+            return ResponseEntity.ok(ApiResponse.success("Public rooms retrieved successfully", rooms));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_PUBLIC_ROOMS_ERROR", "Failed to get public rooms: " + e.getMessage()));
+        }
     }
 
     // Tóm tắt thông tin 1 phòng
     @GetMapping("/{roomId}/summary")
-    public ResponseEntity<RoomSummaryResponse> getRoomSummary(@PathVariable UUID roomId) {
-        RoomSummaryResponse summary = roomService.getRoomSummary(roomId);
-        return ResponseEntity.ok(summary);
+    public ResponseEntity<?> getRoomSummary(@PathVariable UUID roomId) {
+        try {
+            RoomSummaryResponse summary = roomService.getRoomSummary(roomId);
+            if (summary == null) {
+                return ResponseEntity.status(404)
+                        .body(ApiResponse.error("ROOM_NOT_FOUND", "Room not found with ID: " + roomId));
+            }
+            return ResponseEntity.ok(ApiResponse.success("Room summary retrieved successfully", summary));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ROOM_SUMMARY_ERROR", "Failed to get room summary: " + e.getMessage()));
+        }
     }
 
     // Lấy ảnh phòng
     @GetMapping("/{roomId}/images")
-    public ResponseEntity<RoomImagesResponse> getRoomImages(@PathVariable UUID roomId) {
-        RoomImagesResponse images = roomService.getRoomImages(roomId);
-        return ResponseEntity.ok(images);
+    public ResponseEntity<?> getRoomImages(@PathVariable UUID roomId) {
+        try {
+            RoomImagesResponse images = roomService.getRoomImages(roomId);
+            return ResponseEntity.ok(ApiResponse.success("Room images retrieved successfully", images));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ROOM_IMAGES_ERROR", "Failed to get room images: " + e.getMessage()));
+        }
     }
 
     // ================== NEW CRUD APIs (from nguyenvuong-dev branch) ==================
@@ -69,27 +95,53 @@ public class RoomController {
      *
      * @param currentUser - Authenticated user (landlord)
      * @param request     - Room creation details
-     * @return ResponseEntity<RoomResponse>
+     * @return ResponseEntity<?>
      */
     @PostMapping("/room")
-    public ResponseEntity<RoomResponse> createRoom(
+    @PreAuthorize("hasAnyRole('LANDLORD', 'ADMIN')")
+    public ResponseEntity<?> createRoom(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody RoomRequest request
     ) {
-        return ResponseEntity.ok(roomService.createRoom(currentUser, request));
+        try {
+            RoomResponse room = roomService.createRoom(currentUser, request);
+            return ResponseEntity.ok(ApiResponse.success("Room created successfully", room));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("CREATE_ROOM_ERROR", "Failed to create room: " + e.getMessage()));
+        }
     }
 
     /**
      * Get room by ID (UUID version)
      *
      * @param roomId - Room identifier
-     * @return ResponseEntity<RoomResponse>
+     * @return ResponseEntity<?>
      */
     @GetMapping("/{roomId}/details")
-    public ResponseEntity<RoomResponse> getRoomById(
+    public ResponseEntity<?> getRoomById(
             @PathVariable UUID roomId
     ) {
-        return ResponseEntity.ok(roomService.getRoomById(roomId));
+        try {
+            RoomResponse room = roomService.getRoomById(roomId);
+            return ResponseEntity.ok(ApiResponse.success("Room details retrieved successfully", room));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ROOM_ERROR", "Failed to get room details: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getRoomByUserId(
+            @PathVariable UUID userId
+    ) {
+        try {
+            RoomResponse room = (RoomResponse) roomService.getRoomByUserId(userId);
+            return ResponseEntity.ok(ApiResponse.success("Room details retrieved successfully", room));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ROOM_ERROR", "Failed to get room details: " + e.getMessage()));
+        }
     }
 
     /**
@@ -98,15 +150,22 @@ public class RoomController {
      * @param currentUser - Authenticated user (must be room owner)
      * @param roomId      - Room identifier
      * @param request     - Updated room details
-     * @return ResponseEntity<RoomResponse>
+     * @return ResponseEntity<?>
      */
     @PutMapping("/{roomId}")
-    public ResponseEntity<RoomResponse> updateRoom(
+    @PreAuthorize("hasRole('LANDLORD') or hasRole('ADMIN')")
+    public ResponseEntity<?> updateRoom(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID roomId,
             @Valid @RequestBody UpdateRoomRequest request
     ) {
-        return ResponseEntity.ok(roomService.updateRoom(currentUser, roomId, request));
+        try {
+            RoomResponse room = roomService.updateRoom(currentUser, roomId, request);
+            return ResponseEntity.ok(ApiResponse.success("Room updated successfully", room));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("UPDATE_ROOM_ERROR", "Failed to update room: " + e.getMessage()));
+        }
     }
 
     /**
@@ -114,36 +173,55 @@ public class RoomController {
      *
      * @param currentUser - Authenticated user (must be room owner)
      * @param roomId      - Room identifier
-     * @return ResponseEntity<Void>
+     * @return ResponseEntity<?>
      */
     @DeleteMapping("/{roomId}")
-    public ResponseEntity<Void> deleteRoom(
+    @PreAuthorize("hasRole('LANDLORD') or hasRole('ADMIN')")
+    public ResponseEntity<?> deleteRoom(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID roomId
     ) {
-        roomService.deleteRoom(currentUser, roomId);
-        return ResponseEntity.noContent().build();
+        try {
+            roomService.deleteRoom(currentUser, roomId);
+            return ResponseEntity.ok(ApiResponse.success("Room deleted successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("DELETE_ROOM_ERROR", "Failed to delete room: " + e.getMessage()));
+        }
     }
 
     /**
      * Get all available rooms with pagination
      *
      * @param pageable - Pagination information
-     * @return ResponseEntity<Page<RoomResponse>>
+     * @return ResponseEntity<?>
      */
     @GetMapping("/paginated")
-    public ResponseEntity<Page<RoomResponse>> getAllRoomsPaginated(Pageable pageable) {
-        return ResponseEntity.ok(roomService.getAllRooms(pageable));
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    public ResponseEntity<?> getAllRoomsPaginated(Pageable pageable) {
+        try {
+            Page<RoomResponse> rooms = roomService.getAllRooms(pageable);
+            return ResponseEntity.ok(ApiResponse.success("Rooms retrieved successfully with pagination", rooms));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ROOMS_PAGINATED_ERROR", "Failed to get rooms: " + e.getMessage()));
+        }
     }
 
     /**
      * Get all available rooms (UUID version)
      *
-     * @return ResponseEntity<List<RoomResponse>>
+     * @return ResponseEntity<?>
      */
     @GetMapping("/all")
-    public ResponseEntity<List<RoomResponse>> getAllRooms() {
-        List<RoomResponse> rooms = roomService.getAllRooms();
-        return ResponseEntity.ok(rooms);
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    public ResponseEntity<?> getAllRooms() {
+        try {
+            List<RoomResponse> rooms = roomService.getAllRooms();
+            return ResponseEntity.ok(ApiResponse.success("All rooms retrieved successfully", rooms));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_ALL_ROOMS_ERROR", "Failed to get all rooms: " + e.getMessage()));
+        }
     }
 }

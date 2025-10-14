@@ -19,6 +19,8 @@ public interface ReportRepository extends JpaRepository<Report, UUID> {
     
     List<Report> findByStatus(String status);
     
+    Page<Report> findByStatus(String status, Pageable pageable);
+    
     Page<Report> findByStatusOrderByCreatedAtDesc(String status, Pageable pageable);
     
     List<Report> findByReportedContentTypeAndReportedContentId(String contentType, UUID contentId);

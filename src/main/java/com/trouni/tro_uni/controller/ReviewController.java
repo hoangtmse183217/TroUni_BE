@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +21,7 @@ import java.util.UUID;
 
 /**
  * ReviewController - Controller to handle APIs related to room reviews.
- *
+
  * Main functions:
  * - Create a new review for a room.
  * - Get all reviews for a specific room.
@@ -52,6 +53,7 @@ public class ReviewController {
      * @return ResponseEntity - Response containing the created review.
      */
     @PostMapping("/{roomId}")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ReviewResponse>> createReview(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID roomId,
@@ -75,6 +77,7 @@ public class ReviewController {
      * @return ResponseEntity - Response containing the list of reviews.
      */
     @GetMapping("/{roomId}")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getReviewsByRoom(@PathVariable UUID roomId) {
         try {
             List<ReviewResponse> reviews = reviewService.getReviewsByRoom(roomId);
@@ -100,6 +103,7 @@ public class ReviewController {
      * @return ResponseEntity - Response containing the updated review.
      */
     @PutMapping("/{reviewId}")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ReviewResponse>> updateReview(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID reviewId,
@@ -127,6 +131,7 @@ public class ReviewController {
      * @return ResponseEntity - Response indicating the result of the operation.
      */
     @DeleteMapping("/{reviewId}")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteReview(
             @AuthenticationPrincipal User currentUser,
             @PathVariable UUID reviewId) {

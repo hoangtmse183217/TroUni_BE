@@ -96,7 +96,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Cho phép origin từ frontend
-        configuration.setAllowedOrigins(List.of("https://app.swaggerhub.com","http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5501"));
 
         // Cho phép tất cả các HTTP methods
         configuration.addAllowedMethod("*");
@@ -156,13 +156,29 @@ public class SecurityConfig {
                                 "/auth/**",           // Auth endpoints (login, signup, logout)
                                 "/public/**",         // Public endpoints
                                 "/email-verification/**",  // Email verification endpoints
+                                "/rooms/**" ,// Room endpoints
+                                "/room-images/**",// Room-image endpoints
+                                "/reviews/**",// Review endpoints
+                                "/master-amenities/**",//Master-amenity endpoints
+                                "/payments/**",//Payments endpoints
+                                "/subscriptions/**",//Subscriptions endpoints
+                                "/packages/**",//Packages endpoints
+                                "/chat/**",// Chat Endpoints
+                                "/ws/**",// WebSocket Endpoints
                                 "/v3/api-docs/**",    // Swagger API docs
                                 "/swagger-ui/**",     // Swagger UI
                                 "/swagger-ui.html",   // Swagger UI HTML
-                                "/api/rooms/**",      // Room endpoints (original search APIs)
-                                "/room-images/**",    // Room-image endpoints
-                                "/reviews/**",        // Review endpoints
-                                "/master-amenities/**" // Master-amenity endpoints
+                                "/rooms/search",  // Room search (public)
+                                "/rooms/**",         // Public room listing
+                                "/rooms/*/details", // Room details (public)
+                                "/rooms/*/images",  // Room images (public)
+                                "/rooms/*/summary", // Room summary (public)
+                                "/reviews/*",         // Get reviews by room (public)3
+                                "/master-amenities",  // Get all master amenities (public)
+                                "/master-amenities/room/*", // Get amenities by room (public)
+                                "/roommate-posts",    // Get roommate posts (public)
+                                "/roommate-posts/*",  // Get specific roommate post (public)
+                                "/roommate-posts/search/*" // Search roommate posts (public)
                         ).permitAll()
 
                         // Tất cả các endpoint khác cần authentication

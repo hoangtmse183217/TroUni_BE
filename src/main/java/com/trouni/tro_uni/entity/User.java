@@ -18,13 +18,13 @@ import java.util.UUID;
 
 /**
  * User Entity - Entity đại diện cho người dùng trong hệ thống
-
+ * <p>
  * Chức năng chính:
  * - Lưu trữ thông tin cơ bản của user (username, email, password)
  * - Implement UserDetails để tích hợp với Spring Security
  * - Quản lý role và trạng thái verification
  * - Liên kết với Profile entity
- * 
+ *
  * @author TroUni Team
  * @version 1.0
  */
@@ -39,7 +39,7 @@ public class User implements UserDetails {
     // ===============================
     // Primary Key và Basic Fields
     // ===============================
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -57,7 +57,7 @@ public class User implements UserDetails {
     // ===============================
     // Role và Status Fields
     // ===============================
-    
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
@@ -72,7 +72,7 @@ public class User implements UserDetails {
     // ===============================
     // Account Status Fields
     // ===============================
-    
+
     /**
      * Account Status - Trạng thái tài khoản
      * - ACTIVE: Tài khoản hoạt động bình thường
@@ -87,7 +87,7 @@ public class User implements UserDetails {
     // ===============================
     // Social Login Fields
     // ===============================
-    
+
     /**
      * Google Account - Kiểm tra user có đăng nhập bằng Google hay không
      * - Default: false (user đăng ký thông thường)
@@ -99,7 +99,7 @@ public class User implements UserDetails {
     // ===============================
     // Relationship Fields
     // ===============================
-    
+
     /**
      * One-to-one relationship với Profile
      * - mappedBy: Profile entity sẽ có field "user" để reference
@@ -110,10 +110,20 @@ public class User implements UserDetails {
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private Profile profile;
 
+    /**
+     * One-to-many relationship với Room
+     * - mappedBy: Room entity sẽ có field "owner" để reference
+     * - cascade: Khi xóa User thì cũng xóa các Room của user đó
+     * - fetch: Lazy loading để tối ưu performance
+     */
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonIgnore // Tránh circular reference khi serialize JSON
+    private List<Room> rooms;
+
     // ===============================
     // Audit Fields
     // ===============================
-    
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -123,13 +133,13 @@ public class User implements UserDetails {
     // ===============================
     // UserDetails Implementation
     // ===============================
-    
+
     /**
      * Trả về danh sách quyền của user
-
+     * <p>
      * Format: "ROLE_" + role.name()
      * Ví dụ: "ROLE_STUDENT", "ROLE_ADMIN"
-     * 
+     *
      * @return Collection<GrantedAuthority> - Danh sách quyền
      */
     @Override
@@ -139,7 +149,7 @@ public class User implements UserDetails {
 
     /**
      * Trả về password đã được mã hóa
-     * 
+     *
      * @return String - Password hash
      */
     @Override
@@ -149,10 +159,10 @@ public class User implements UserDetails {
 
     /**
      * Trả về username (không phải email)
-
+     * <p>
      * Quan trọng: Phải return username, không phải email
      * để phân biệt được login bằng username vs email
-     * 
+     *
      * @return String - Username
      */
     @Override
@@ -162,7 +172,7 @@ public class User implements UserDetails {
 
     /**
      * Kiểm tra tài khoản có hết hạn không
-     * 
+     *
      * @return boolean - true nếu tài khoản chưa hết hạn
      */
     @Override
@@ -172,7 +182,7 @@ public class User implements UserDetails {
 
     /**
      * Kiểm tra tài khoản có bị khóa không
-     * 
+     *
      * @return boolean - true nếu tài khoản chưa bị khóa
      */
     @Override
@@ -182,7 +192,7 @@ public class User implements UserDetails {
 
     /**
      * Kiểm tra credentials (password) có hết hạn không
-     * 
+     *
      * @return boolean - true nếu credentials chưa hết hạn
      */
     @Override
@@ -192,7 +202,7 @@ public class User implements UserDetails {
 
     /**
      * Kiểm tra tài khoản có được kích hoạt không
-     * 
+     *
      * @return boolean - true nếu tài khoản đã được kích hoạt
      */
     @Override
@@ -203,7 +213,7 @@ public class User implements UserDetails {
     // ===============================
     // Lifecycle Callbacks
     // ===============================
-    
+
     /**
      * Callback trước khi update entity
      * Tự động cập nhật updatedAt khi có thay đổi

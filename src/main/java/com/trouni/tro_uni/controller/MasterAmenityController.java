@@ -1,6 +1,8 @@
 package com.trouni.tro_uni.controller;
 
+import com.trouni.tro_uni.dto.common.ApiResponse;
 import com.trouni.tro_uni.dto.request.masteramenity.MasterAmenityRequest;
+import com.trouni.tro_uni.dto.request.masteramenity.UpdateAmenityRequest;
 import com.trouni.tro_uni.dto.response.MasterAmenity.MasterAmenityResponse;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.service.MasterAmenityService;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,24 +31,53 @@ public class MasterAmenityController {
      * Create a new master amenity.
      * (Typically restricted to Admin users)
      * @param request - The details of the amenity to create.
-     * @return ResponseEntity<MasterAmenityResponse>
+     * @return ResponseEntity<?>
      */
-    @PostMapping("/{roomId}")
-    public ResponseEntity<MasterAmenityResponse> createMasterAmenity(
-            @PathVariable UUID roomId,
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> createMasterAmenity(
             @Valid @RequestBody MasterAmenityRequest request) {
-
-        MasterAmenityResponse response = masterAmenityService.createMasterAmenity(roomId, request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        try {
+            MasterAmenityResponse response = masterAmenityService.createMasterAmenity(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Master amenity created successfully", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("CREATE_MASTER_AMENITY_ERROR", "Failed to create master amenity: " + e.getMessage()));
+        }
     }
 
     /**
      * Get all master amenities.
-     * @return ResponseEntity<List<MasterAmenityResponse>>
+     * @return ResponseEntity<?>
      */
-    @GetMapping("/{amenityId}")
-    public ResponseEntity<List<MasterAmenityResponse>> getAllMasterAmenities(@PathVariable UUID amenityId) {
-        return ResponseEntity.ok(masterAmenityService.getMasterAmenities(amenityId));
+    @GetMapping
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<?> getAllMasterAmenities() {
+        try {
+            List<MasterAmenityResponse> amenities = masterAmenityService.getAllMasterAmenities();
+            return ResponseEntity.ok(ApiResponse.success("Master amenities retrieved successfully", amenities));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_MASTER_AMENITIES_ERROR", "Failed to get master amenities: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get master amenities for a specific room.
+     * @param roomId - The room ID to get amenities for
+     * @return ResponseEntity<?>
+     */
+    @GetMapping("/room/{roomId}")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<?> getMasterAmenitiesByRoom(@PathVariable UUID roomId) {
+        try {
+            List<MasterAmenityResponse> amenities = masterAmenityService.getMasterAmenities(roomId);
+            return ResponseEntity.ok(ApiResponse.success("Master amenities for room retrieved successfully", amenities));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("GET_MASTER_AMENITIES_ERROR", "Failed to get master amenities: " + e.getMessage()));
+        }
     }
 
     /**
@@ -55,24 +87,32 @@ public class MasterAmenityController {
      * @param request - The new details for the amenity.
      * @return ResponseEntity<MasterAmenityResponse>
      */
-//    @PutMapping("/{amenityId}")
-//    public ResponseEntity<MasterAmenityResponse> updateMasterAmenity(
-//            @PathVariable UUID amenityId,
-//            @Valid @RequestBody MasterAmenityRequest request) {
-//        return ResponseEntity.ok(masterAmenityService.updateMasterAmenity(amenityId, request));
-//    }
+    @PutMapping("/{amenityId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MasterAmenityResponse> updateMasterAmenity(
+            @PathVariable UUID amenityId,
+            @Valid @RequestBody UpdateAmenityRequest request) {
+        return ResponseEntity.ok(masterAmenityService.updateMasterAmenity(amenityId, request));
+    }
 
     /**
      * Delete a master amenity.
      * (Typically restricted to Admin users)
+     * @param currentUser - The authenticated user
      * @param amenityId - The ID of the amenity to delete.
-     * @return ResponseEntity<Void>
+     * @return ResponseEntity<?>
      */
     @DeleteMapping("/{amenityId}")
-    public ResponseEntity<Void> deleteMasterAmenity(
-            @AuthenticationPrincipal User curentUser,
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteMasterAmenity(
+            @AuthenticationPrincipal User currentUser,
             @PathVariable UUID amenityId) {
-        masterAmenityService.deleteMasterAmenity(curentUser,amenityId);
-        return ResponseEntity.noContent().build();
+        try {
+            masterAmenityService.deleteMasterAmenity(currentUser, amenityId);
+            return ResponseEntity.ok(ApiResponse.success("Master amenity deleted successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("DELETE_MASTER_AMENITY_ERROR", "Failed to delete master amenity: " + e.getMessage()));
+        }
     }
 }

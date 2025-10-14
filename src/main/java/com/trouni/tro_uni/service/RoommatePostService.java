@@ -8,6 +8,7 @@ import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.UserRole;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.GeneralErrorCode;
+import com.trouni.tro_uni.mapper.RoommatePostMapper;
 import com.trouni.tro_uni.repository.RoommatePostRepository;
 import com.trouni.tro_uni.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * RoommatePostService - Service xử lý các thao tác liên quan đến bài đăng tìm roommate
- * 
+
  * Chức năng chính:
  * - Tạo, sửa, xóa bài đăng tìm roommate
  * - Lấy danh sách bài đăng
@@ -39,6 +40,7 @@ public class RoommatePostService {
     
     private final RoommatePostRepository roommatePostRepository;
     private final UserRepository userRepository;
+    private final RoommatePostMapper roommatePostMapper;
     
     /**
      * Tạo bài đăng tìm roommate mới
@@ -46,11 +48,6 @@ public class RoommatePostService {
     @Transactional
     public RoommatePostResponse createRoommatePost(CreateRoommatePostRequest request) {
         User currentUser = getCurrentUser();
-        
-        // Kiểm tra user có role STUDENT không
-        if (!currentUser.getRole().equals(UserRole.STUDENT)) {
-            throw new AppException(GeneralErrorCode.ACCESS_DENIED, "Only students can create roommate posts");
-        }
         
         // Validate budget range
         if (request.getBudgetMin() != null && request.getBudgetMax() != null && 
@@ -83,7 +80,7 @@ public class RoommatePostService {
                 .orElseThrow(() -> new AppException(GeneralErrorCode.RESOURCE_NOT_FOUND));
         
         // Kiểm tra quyền sở hữu
-        if (!post.getAuthor().getId().equals(currentUser.getId())) {
+        if (!post.getAuthor().getId().equals(currentUser.getId()) && getCurrentUser().getRole().equals(UserRole.ADMIN)) {
             throw new AppException(GeneralErrorCode.ACCESS_DENIED, "You can only update your own posts");
         }
         
@@ -93,25 +90,8 @@ public class RoommatePostService {
             throw new AppException(GeneralErrorCode.INVALID_INPUT, "Budget min cannot be greater than budget max");
         }
         
-        // Update fields if provided
-        if (request.getTitle() != null) {
-            post.setTitle(request.getTitle());
-        }
-        if (request.getDescription() != null) {
-            post.setDescription(request.getDescription());
-        }
-        if (request.getDesiredLocationText() != null) {
-            post.setDesiredLocationText(request.getDesiredLocationText());
-        }
-        if (request.getBudgetMin() != null) {
-            post.setBudgetMin(request.getBudgetMin());
-        }
-        if (request.getBudgetMax() != null) {
-            post.setBudgetMax(request.getBudgetMax());
-        }
-        if (request.getStatus() != null) {
-            post.setStatus(request.getStatus());
-        }
+        // Update fields using mapper
+        roommatePostMapper.updateRoommatePostFields(request, post);
         
         post = roommatePostRepository.save(post);
         
@@ -157,7 +137,7 @@ public class RoommatePostService {
         Page<RoommatePost> posts;
         
         if (status != null && !status.isEmpty()) {
-            posts = roommatePostRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+            posts = roommatePostRepository.findByStatus(status, pageable);
         } else {
             posts = roommatePostRepository.findAll(pageable);
         }
