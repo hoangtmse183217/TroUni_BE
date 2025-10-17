@@ -5,6 +5,7 @@ import com.trouni.tro_uni.dto.request.payment.VietQRPaymentRequest;
 import com.trouni.tro_uni.dto.response.payment.PaymentResponse;
 import com.trouni.tro_uni.dto.response.payment.VietQRPaymentResponse;
 import com.trouni.tro_uni.entity.Payment;
+import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.Subscription;
 import com.trouni.tro_uni.entity.User;
 import com.trouni.tro_uni.enums.PaymentMethod;
@@ -12,6 +13,9 @@ import com.trouni.tro_uni.enums.PaymentStatus;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.PaymentErrorCode;
 import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
+import com.trouni.tro_uni.dto.request.payment.RoomPaymentRequest;
+import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
+import com.trouni.tro_uni.repository.RoomRepository;
 import com.trouni.tro_uni.repository.PaymentRepository;
 import com.trouni.tro_uni.repository.SubscriptionRepository;
 import com.trouni.tro_uni.repository.UserRepository;
@@ -50,6 +54,7 @@ public class PaymentService {
     UserRepository userRepository;
     SubscriptionRepository subscriptionRepository;
     VietQRService vietQRService;
+    RoomRepository roomRepository; // Thêm RoomRepository
 
     /**
      * Tạo thanh toán VietQR
@@ -126,6 +131,91 @@ public class PaymentService {
 
         return response;
     }
+
+    /**
+     * Tạo thanh toán VietQR cho một phòng
+     *
+     * @param request - Thông tin thanh toán phòng
+     * @return VietQRPaymentResponse - Response chứa QR code
+     */
+    @Transactional
+    public VietQRPaymentResponse createRoomPayment(RoomPaymentRequest request) {
+        User currentUser = getCurrentUser();
+
+        // Kiểm tra phòng có tồn tại không
+        Room room = roomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+
+        // Kiểm tra số tiền thanh toán có khớp với giá phòng không
+//        if (request.getAmount()) {
+//            throw new AppException(PaymentErrorCode.PAYMENT_AMOUNT_INVALID);
+//        }
+
+        // Tạo mã giao dịch unique
+        String transactionCode = generateTransactionCode();
+
+        // Tạo Payment entity
+        Payment payment = new Payment();
+        payment.setUser(currentUser);
+        payment.setAmount(request.getAmount());
+        payment.setPaymentMethod(PaymentMethod.VIETQR.name());
+        payment.setTransactionCode(transactionCode);
+        payment.setStatus(PaymentStatus.PENDING.name());
+        payment.setCreatedAt(LocalDateTime.now());
+        // Không set subscription vì đây là thanh toán cho phòng, không phải subscription
+
+        // Lưu payment
+        Payment savedPayment = paymentRepository.save(payment);
+
+        // Tạo description
+        String description = request.getDescription() != null
+                ? request.getDescription()
+                : "Thanh toan phong " + room.getTitle();
+
+        // Generate VietQR
+        String qrCodeBase64 = vietQRService.generateVietQRBase64(
+                request.getAmount(),
+                description,
+                transactionCode
+        );
+
+        String qrCodeUrl = vietQRService.generateVietQRUrl(
+                request.getAmount(),
+                description,
+                transactionCode
+        );
+
+        // Get bank info
+        Map<String, String> bankInfo = vietQRService.getBankInfo();
+
+        // Build response
+        VietQRPaymentResponse response = VietQRPaymentResponse.builder()
+                .paymentId(savedPayment.getId())
+                .transactionCode(transactionCode)
+                .amount(request.getAmount())
+                .status(PaymentStatus.PENDING)
+                .qrCodeBase64(qrCodeBase64)
+                .qrCodeUrl(qrCodeUrl)
+                .description(description)
+                .createdAt(savedPayment.getCreatedAt())
+                .expiresAt(LocalDateTime.now().plusMinutes(15)) // QR code hết hạn sau 15 phút
+                .bankAccountNumber(bankInfo.get("accountNumber"))
+                .bankAccountName(bankInfo.get("accountName"))
+                .bankName(bankInfo.get("bankName"))
+                .build();
+
+        log.info("Created VietQR payment for room: {}, user: {}, transaction: {}",
+                room.getId(), currentUser.getUsername(), transactionCode);
+
+        return response;
+    }
+
+    /**
+     * Xác nhận thanh toán qua webhook
+     *
+     * @param request - Thông tin từ webhook
+     * @return PaymentResponse - Payment đã được cập nhật
+     */
 
     /**
      * Xác nhận thanh toán qua webhook

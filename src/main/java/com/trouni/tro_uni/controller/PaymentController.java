@@ -2,6 +2,7 @@ package com.trouni.tro_uni.controller;
 
 import com.trouni.tro_uni.dto.request.payment.PaymentWebhookRequest;
 import com.trouni.tro_uni.dto.request.payment.VietQRPaymentRequest;
+import com.trouni.tro_uni.dto.request.payment.RoomPaymentRequest; // Thêm import này
 import com.trouni.tro_uni.dto.response.payment.PaymentResponse;
 import com.trouni.tro_uni.dto.response.payment.VietQRPaymentResponse;
 import com.trouni.tro_uni.service.PaymentService;
@@ -54,6 +55,25 @@ public class PaymentController {
 
         log.info("Creating VietQR payment for amount: {}", request.getAmount());
         VietQRPaymentResponse response = paymentService.createVietQRPayment(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    /**
+     * Tạo thanh toán VietQR cho một phòng
+     *
+     * @param request - Thông tin thanh toán phòng
+     * @return VietQRPaymentResponse - Response chứa QR code
+     */
+    @PostMapping("/room-payment")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<VietQRPaymentResponse> createRoomPayment(
+            @Valid @RequestBody RoomPaymentRequest request) {
+
+        log.info("Creating VietQR payment for room ID: {} with amount: {}", request.getRoomId(), request.getAmount());
+        VietQRPaymentResponse response = paymentService.createRoomPayment(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

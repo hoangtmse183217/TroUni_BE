@@ -35,19 +35,19 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class VietQRService {
 
-    @Value("${vietqr.bank.bin:970422}")
+    @Value("${BIN}")
     String bankBin; // Mã BIN ngân hàng (VD: 970422 - MB Bank)
 
-    @Value("${vietqr.bank.account:0123456789}")
+    @Value("${BANK.ACCOUNT}")
     String bankAccount; // Số tài khoản ngân hàng
 
-    @Value("${vietqr.bank.name:NGUYEN VAN A}")
+    @Value("${BANK.NAME}")
     String bankAccountName; // Tên chủ tài khoản
 
-    @Value("${vietqr.bank.display-name:MB Bank}")
+    @Value("${BANK.DISPLAY.NAME}")
     String bankDisplayName; // Tên ngân hàng hiển thị
 
-    @Value("${vietqr.template:compact2}")
+    @Value("${TEMPLATE}")
     String template; // Template VietQR (compact, compact2, qr_only, print)
 
     /**
