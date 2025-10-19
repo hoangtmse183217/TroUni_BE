@@ -161,7 +161,7 @@ public class PaymentService {
         payment.setTransactionCode(transactionCode);
         payment.setStatus(PaymentStatus.PENDING.name());
         payment.setCreatedAt(LocalDateTime.now());
-        // Không set subscription vì đây là thanh toán cho phòng, không phải subscription
+        payment.setRoom(room); // Set the room for the payment
 
         // Lưu payment
         Payment savedPayment = paymentRepository.save(payment);
@@ -256,13 +256,27 @@ public class PaymentService {
                 break;
             case PROCESSING:
                 payment.setStatus(PaymentStatus.PROCESSING.name());
+                // If this payment is for a room, set the room status to 'rented'
+                if (payment.getRoom() != null) {
+                    Room roomToUpdate = payment.getRoom();
+                    roomToUpdate.setStatus("rented");
+                    roomRepository.save(roomToUpdate);
+                    log.info("Room {} status set to 'rented' due to payment processing.", roomToUpdate.getId());
+                }
                 log.info("Payment status updated to PROCESSING: {}, user: {}",
                         payment.getTransactionCode(),
                         payment.getUser().getUsername());
                 break;
-            case FAILED:
-                payment.setStatus(PaymentStatus.FAILED.name());
-                log.warn("Payment confirmed as FAILED: {}, user: {}",
+            case CANCELLED:
+                payment.setStatus(PaymentStatus.CANCELLED.name());
+                // If this payment was for a room, set the room status back to 'available'
+                if (payment.getRoom() != null) {
+                    Room roomToUpdate = payment.getRoom();
+                    roomToUpdate.setStatus("available");
+                    roomRepository.save(roomToUpdate);
+                    log.info("Room {} status set back to 'available' due to payment cancellation.", roomToUpdate.getId());
+                }
+                log.warn("Payment confirmed as CANCELLED: {}, user: {}",
                         payment.getTransactionCode(),
                         payment.getUser().getUsername());
                 break;
