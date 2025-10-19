@@ -116,7 +116,6 @@ public class PaymentService {
                 .transactionCode(transactionCode)
                 .amount(request.getAmount())
                 .status(PaymentStatus.PENDING)
-                .qrCodeBase64(qrCodeBase64)
                 .qrCodeUrl(qrCodeUrl)
                 .description(description)
                 .createdAt(savedPayment.getCreatedAt())
@@ -173,11 +172,11 @@ public class PaymentService {
                 : "Thanh toan phong " + room.getTitle();
 
         // Generate VietQR
-        String qrCodeBase64 = vietQRService.generateVietQRBase64(
-                request.getAmount(),
-                description,
-                transactionCode
-        );
+//        String qrCodeBase64 = vietQRService.generateVietQRBase64(
+//                request.getAmount(),
+//                description,
+//                transactionCode
+//        );
 
         String qrCodeUrl = vietQRService.generateVietQRUrl(
                 request.getAmount(),
@@ -194,7 +193,6 @@ public class PaymentService {
                 .transactionCode(transactionCode)
                 .amount(request.getAmount())
                 .status(PaymentStatus.PENDING)
-                .qrCodeBase64(qrCodeBase64)
                 .qrCodeUrl(qrCodeUrl)
                 .description(description)
                 .createdAt(savedPayment.getCreatedAt())
@@ -230,7 +228,10 @@ public class PaymentService {
                 .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
         // Kiểm tra payment đã được xử lý chưa
-        if (PaymentStatus.COMPLETED.name().equals(payment.getStatus())) {
+        // Nếu đã hoàn thành, thất bại hoặc bị hủy, không xử lý lại
+        if (PaymentStatus.COMPLETED.name().equals(payment.getStatus()) ||
+            PaymentStatus.FAILED.name().equals(payment.getStatus()) ||
+            PaymentStatus.CANCELLED.name().equals(payment.getStatus())) {
             throw new AppException(PaymentErrorCode.PAYMENT_ALREADY_PROCESSED);
         }
 
@@ -239,19 +240,40 @@ public class PaymentService {
             throw new AppException(PaymentErrorCode.PAYMENT_AMOUNT_INVALID);
         }
 
-        // Cập nhật status
-        payment.setStatus(PaymentStatus.COMPLETED.name());
-        Payment updatedPayment = paymentRepository.save(payment);
+        // Cập nhật status dựa trên trạng thái từ webhook
+        PaymentStatus newStatus = PaymentStatus.valueOf(request.getStatus().toUpperCase());
 
-        // Nếu có subscription, cập nhật subscription
-        if (payment.getSubscription() != null) {
-            updateSubscription(payment.getSubscription());
+        switch (newStatus) {
+            case COMPLETED:
+                payment.setStatus(PaymentStatus.COMPLETED.name());
+                // Nếu có subscription, cập nhật subscription
+                if (payment.getSubscription() != null) {
+                    updateSubscription(payment.getSubscription());
+                }
+                log.info("Payment confirmed as COMPLETED: {}, user: {}",
+                        payment.getTransactionCode(),
+                        payment.getUser().getUsername());
+                break;
+            case PROCESSING:
+                payment.setStatus(PaymentStatus.PROCESSING.name());
+                log.info("Payment status updated to PROCESSING: {}, user: {}",
+                        payment.getTransactionCode(),
+                        payment.getUser().getUsername());
+                break;
+            case FAILED:
+                payment.setStatus(PaymentStatus.FAILED.name());
+                log.warn("Payment confirmed as FAILED: {}, user: {}",
+                        payment.getTransactionCode(),
+                        payment.getUser().getUsername());
+                break;
+            default:
+                // Nếu webhook gửi trạng thái không mong muốn hoặc PENDING, giữ nguyên trạng thái hiện tại
+                log.warn("Received unexpected webhook status '{}' for transaction {}. Keeping current status '{}'.",
+                        request.getStatus(), request.getTransactionCode(), payment.getStatus());
+                break;
         }
 
-        log.info("Payment confirmed: {}, user: {}",
-                payment.getTransactionCode(),
-                payment.getUser().getUsername());
-
+        Payment updatedPayment = paymentRepository.save(payment);
         return PaymentResponse.fromPayment(updatedPayment);
     }
 

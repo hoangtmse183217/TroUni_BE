@@ -26,7 +26,7 @@ public class VietQRPaymentResponse {
 
     PaymentStatus status;
 
-    String qrCodeBase64; // QR code dạng base64 để hiển thị
+//    String qrCodeBase64;  QR code dạng base64 để hiển thị
 
     String qrCodeUrl; // URL của VietQR API
 

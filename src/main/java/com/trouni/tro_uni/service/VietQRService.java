@@ -99,9 +99,9 @@ public class VietQRService {
     public String generateVietQRUrl(BigDecimal amount, String description, String transactionCode) {
         String addInfo = description + " - Ma GD: " + transactionCode;
 
-        // Format: https://img.vietqr.io/image/{BANK_BIN}-{ACCOUNT_NO}-{TEMPLATE}.png?amount={AMOUNT}&addInfo={INFO}&accountName={ACC_NAME}
+        // Format: https://api.vietqr.io/image/{BANK_BIN}-{ACCOUNT_NO}-{TEMPLATE}.jpg?amount={AMOUNT}&addInfo={INFO}&accountName={ACC_NAME}
         return String.format(
-            "https://img.vietqr.io/image/%s-%s-%s.png?amount=%s&addInfo=%s&accountName=%s",
+            "https://api.vietqr.io/image/%s-%s-%s.jpg?amount=%s&addInfo=%s&accountName=%s",
             bankBin,
             bankAccount,
             template,
