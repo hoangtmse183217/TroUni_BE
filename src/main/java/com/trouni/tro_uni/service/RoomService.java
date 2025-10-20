@@ -291,7 +291,7 @@ public class RoomService {
      * @return Page<RoomResponse> - Paginated list of rooms
      */
     public Page<RoomResponse> getAllRooms(Pageable pageable) {
-        return roomRepository.findByStatus("available, rented", pageable)
+        return roomRepository.findAll(pageable)
                 .map(RoomResponse::fromRoom);
     }
 
