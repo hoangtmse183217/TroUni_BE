@@ -177,9 +177,9 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
-        if (!room.getOwner().getId().equals(currentUser.getId())) {
-            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
-        }
+//        if (!room.getOwner().getId().equals(currentUser.getId())) {
+//            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
+//        }
 
         // Cập nhật thông tin cơ bản
         room.setTitle(request.getTitle());
@@ -234,7 +234,7 @@ public class RoomService {
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
         // Kiểm tra xem phòng có public không
-        if (!"available".equalsIgnoreCase(room.getStatus())) {
+        if (!"available".equalsIgnoreCase(room.getStatus()) && !"rented".equalsIgnoreCase(room.getStatus())) {
             throw new AppException(RoomErrorCode.ROOM_NOT_FOUND); // Coi như không tìm thấy
         }
 
@@ -291,7 +291,7 @@ public class RoomService {
      * @return Page<RoomResponse> - Paginated list of rooms
      */
     public Page<RoomResponse> getAllRooms(Pageable pageable) {
-        return roomRepository.findByStatus("available", pageable)
+        return roomRepository.findByStatus("available, rented", pageable)
                 .map(RoomResponse::fromRoom);
     }
 
