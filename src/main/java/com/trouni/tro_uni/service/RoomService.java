@@ -30,7 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -138,6 +140,10 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
+        if ("deleted".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
+        }
+
         room.setViewCount(room.getViewCount() + 1);
         roomRepository.save(room);
 
@@ -177,9 +183,9 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
-//        if (!room.getOwner().getId().equals(currentUser.getId())) {
-//            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
-//        }
+        if ("deleted".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
+        }
 
         // Cập nhật thông tin cơ bản
         room.setTitle(request.getTitle());
@@ -251,7 +257,7 @@ public class RoomService {
      */
     @Transactional(readOnly = true)
     public List<RoomResponse> getRoomByUserId(UUID userId) {
-        List<Room> rooms = roomRepository.findByOwnerId(userId);
+        List<Room> rooms = roomRepository.findByOwnerIdAndStatusNot(userId, "deleted");
 
         if (rooms.isEmpty()) {
             throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
@@ -279,8 +285,9 @@ public class RoomService {
             throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
         }
 
-        roomRepository.delete(room);
-        log.info("Deleted room with ID: {} by user: {}", roomId, currentUser.getUsername());
+        room.setStatus("deleted");
+        roomRepository.save(room);
+        log.info("Soft deleted room with ID: {} by user: {}", roomId, currentUser.getUsername());
     }
 
     /**
@@ -291,7 +298,8 @@ public class RoomService {
      * @return Page<RoomResponse> - Paginated list of rooms
      */
     public Page<RoomResponse> getAllRooms(Pageable pageable) {
-        return roomRepository.findAll(pageable)
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("createdAt").descending());
+        return roomRepository.findByStatusNot("deleted", sortedPageable)
                 .map(RoomResponse::fromRoom);
     }
 
@@ -301,7 +309,7 @@ public class RoomService {
      * @return List of RoomResponse containing all rooms
      */
     public List<RoomResponse> getAllRooms() {
-        return roomRepository.findAll().stream()
+        return roomRepository.findByStatusNot("deleted").stream()
                 .map(RoomResponse::fromRoom)
                 .collect(Collectors.toList());
     }
@@ -371,7 +379,7 @@ public class RoomService {
     @Transactional(readOnly = true)
     public List<RoomListItemResponse> getPublicRooms() {
         // Chỉ lấy các phòng có status "available" từ database
-        List<Room> publicRooms = roomRepository.findByStatus("available");
+        List<Room> publicRooms = roomRepository.findByStatusOrderByCreatedAtDesc("available");
         return publicRooms.stream()
                 .map(this::toRoomListItemResponse)
                 .collect(Collectors.toList());
