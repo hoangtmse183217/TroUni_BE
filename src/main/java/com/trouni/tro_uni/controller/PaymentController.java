@@ -1,10 +1,13 @@
 package com.trouni.tro_uni.controller;
 
-import com.trouni.tro_uni.dto.request.payment.PaymentWebhookRequest;
-import com.trouni.tro_uni.dto.request.payment.VietQRPaymentRequest;
-import com.trouni.tro_uni.dto.request.payment.RoomPaymentRequest; // Thêm import này
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.trouni.tro_uni.config.PayOSProperties;
+import com.trouni.tro_uni.dto.request.payment.PayOSPaymentRequest;
+import com.trouni.tro_uni.dto.request.payment.PayOSWebhookRequest;
+import com.trouni.tro_uni.dto.response.payment.PayOSPaymentResponse;
 import com.trouni.tro_uni.dto.response.payment.PaymentResponse;
-import com.trouni.tro_uni.dto.response.payment.VietQRPaymentResponse;
+import com.trouni.tro_uni.exception.AppException;
+import com.trouni.tro_uni.exception.errorcode.PaymentErrorCode;
 import com.trouni.tro_uni.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -26,7 +29,7 @@ import java.util.UUID;
  * PaymentController - API endpoints cho thanh toán
  *
  * Endpoints:
- * - POST /api/payments/vietqr - Tạo thanh toán VietQR
+ * - POST /api/payments/payos - Tạo thanh toán PayOS
  * - POST /api/payments/webhook - Webhook xác nhận thanh toán
  * - GET /api/payments/{id} - Lấy thông tin payment
  * - GET /api/payments/transaction/{code} - Lấy payment theo transaction code
@@ -41,39 +44,21 @@ import java.util.UUID;
 public class PaymentController {
 
     PaymentService paymentService;
+    PayOSProperties payOSProperties;
 
     /**
-     * Tạo thanh toán VietQR
+     * Tạo thanh toán PayOS
      *
-     * @param request - Thông tin thanh toán
-     * @return VietQRPaymentResponse - Response chứa QR code
+     * @param request - Thông tin thanh toán PayOS
+     * @return PayOSPaymentResponse - Response chứa URL liên kết thanh toán PayOS
      */
-    @PostMapping("/viet-qr")
+    @PostMapping("/payos")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<VietQRPaymentResponse> createVietQRPayment(
-            @Valid @RequestBody VietQRPaymentRequest request) {
+    public ResponseEntity<PayOSPaymentResponse> createPayOSPayment(
+            @Valid @RequestBody PayOSPaymentRequest request) {
 
-        log.info("Creating VietQR payment for amount: {}", request.getAmount());
-        VietQRPaymentResponse response = paymentService.createVietQRPayment(request);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
-
-    /**
-     * Tạo thanh toán VietQR cho một phòng
-     *
-     * @param request - Thông tin thanh toán phòng
-     * @return VietQRPaymentResponse - Response chứa QR code
-     */
-    @PostMapping("/room-payment")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<VietQRPaymentResponse> createRoomPayment(
-            @Valid @RequestBody RoomPaymentRequest request) {
-
-        log.info("Creating VietQR payment for room ID: {} with amount: {}", request.getRoomId(), request.getAmount());
-        VietQRPaymentResponse response = paymentService.createRoomPayment(request);
+        log.info("Creating PayOS payment for amount: {}", request.getAmount());
+        PayOSPaymentResponse response = paymentService.createPayOSPayment(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -86,24 +71,40 @@ public class PaymentController {
      * Endpoint này sẽ được gọi bởi ngân hàng/payment gateway
      * khi có giao dịch chuyển khoản thành công
      *
-     * @param request - Thông tin từ webhook
+     * @param rawRequestBody - Thông tin từ webhook
      * @return PaymentResponse - Payment đã được cập nhật
      */
     @PostMapping("/webhook")
     public ResponseEntity<PaymentResponse> handlePaymentWebhook(
-            @RequestBody PaymentWebhookRequest request) {
+            @RequestBody String rawRequestBody) {
 
-        log.info("Received payment webhook for transaction: {}", request.getTransactionCode());
+        log.info("Received raw payment webhook request: {}", rawRequestBody);
 
-        // TODO: Validate webhook signature để đảm bảo request từ nguồn tin cậy
-        // String signature = request.getSignature();
-        // if (!validateSignature(signature)) {
-        //     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        // }
+        // Handle PayOS webhook URL validation request (empty body)
+        if (rawRequestBody == null || rawRequestBody.trim().isEmpty()) {
+            log.info("Received empty webhook request, likely PayOS URL validation. Returning 200 OK.");
+            return ResponseEntity.ok().build();
+        }
 
-        PaymentResponse response = paymentService.confirmPayment(request);
+        log.debug("Attempting to validate and parse webhook request.");
+        // Validate PayOS webhook signature and parse request in PayOSService
+        PayOSWebhookRequest request = paymentService.validateAndParsePayOSWebhook(rawRequestBody);
 
-        return ResponseEntity.ok(response);
+        log.info("Webhook request successfully validated and parsed. OrderCode: {}", request.getOrderCode());
+
+        try {
+            PaymentResponse response = paymentService.confirmPayment(request);
+            log.info("Payment webhook processed successfully for transaction: {}", request.getOrderCode());
+            return ResponseEntity.ok(response);
+        } catch (AppException e) {
+            if (e.getErrorCode().equals(PaymentErrorCode.PAYMENT_NOT_FOUND.name())) {
+                log.warn("Payment not found for webhook validation ping (orderCode: {}). Returning 200 OK.", request.getOrderCode());
+                return ResponseEntity.ok().build(); // Return 200 OK for validation pings
+            } else {
+                throw e; // Re-throw other AppExceptions
+            }
+        }
+
     }
 
     /**
@@ -205,5 +206,34 @@ public class PaymentController {
                 "status", payment.getStatus().name(),
                 "amount", payment.getAmount().toString()
         ));
+    }
+
+    /**
+     * Xử lý callback từ PayOS khi người dùng hủy thanh toán
+     *
+     * @param code - Mã phản hồi từ PayOS
+     * @param id - ID giao dịch từ PayOS
+     * @param cancel - Trạng thái hủy
+     * @param status - Trạng thái thanh toán
+     * @param orderCode - Mã đơn hàng (transactionCode của ứng dụng)
+     * @return Chuyển hướng đến trang hủy thanh toán
+     */
+    @GetMapping("/cancel")
+    public ResponseEntity<Void> handlePayOSCancel(
+            @RequestParam("code") String code,
+            @RequestParam("id") String id,
+            @RequestParam("cancel") boolean cancel,
+            @RequestParam("status") String status,
+            @RequestParam("orderCode") String orderCode) {
+
+        log.info("Received PayOS cancel callback. OrderCode: {}, Status: {}", orderCode, status);
+
+        // Call service to update payment status to CANCELLED
+        paymentService.handlePayOSCancel(orderCode, status);
+
+        // Redirect to a user-friendly cancellation page
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header("Location", "/cancel_payment.html")
+                .build();
     }
 }

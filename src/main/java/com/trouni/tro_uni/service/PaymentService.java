@@ -1,9 +1,13 @@
 package com.trouni.tro_uni.service;
 
-import com.trouni.tro_uni.dto.request.payment.PaymentWebhookRequest;
-import com.trouni.tro_uni.dto.request.payment.VietQRPaymentRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trouni.tro_uni.config.PayOSProperties;
+import com.trouni.tro_uni.dto.request.payment.PayOSPaymentRequest;
+import com.trouni.tro_uni.dto.request.payment.PayOSWebhookRequest;
+import com.trouni.tro_uni.dto.request.payment.CreatePaymentRequestServiceDto;
+import com.trouni.tro_uni.dto.response.payment.PayOSPaymentResponse;
 import com.trouni.tro_uni.dto.response.payment.PaymentResponse;
-import com.trouni.tro_uni.dto.response.payment.VietQRPaymentResponse;
 import com.trouni.tro_uni.entity.Payment;
 import com.trouni.tro_uni.entity.Room;
 import com.trouni.tro_uni.entity.Subscription;
@@ -13,7 +17,6 @@ import com.trouni.tro_uni.enums.PaymentStatus;
 import com.trouni.tro_uni.exception.AppException;
 import com.trouni.tro_uni.exception.errorcode.PaymentErrorCode;
 import com.trouni.tro_uni.exception.errorcode.AuthenticationErrorCode;
-import com.trouni.tro_uni.dto.request.payment.RoomPaymentRequest;
 import com.trouni.tro_uni.exception.errorcode.RoomErrorCode;
 import com.trouni.tro_uni.repository.RoomRepository;
 import com.trouni.tro_uni.repository.PaymentRepository;
@@ -29,18 +32,22 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.webhooks.WebhookData;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+
 /**
  * PaymentService - Service xử lý thanh toán
  *
  * Chức năng chính:
- * - Tạo thanh toán VietQR
+ * - Tạo thanh toán PayOS
  * - Xác nhận thanh toán qua webhook
  * - Quản lý lịch sử thanh toán
  */
@@ -53,159 +60,104 @@ public class PaymentService {
     PaymentRepository paymentRepository;
     UserRepository userRepository;
     SubscriptionRepository subscriptionRepository;
-    VietQRService vietQRService;
-    RoomRepository roomRepository; // Thêm RoomRepository
+    RoomRepository roomRepository;
+    PayOSService payOSService;
+    PayOSProperties payOSProperties;
+    ObjectMapper objectMapper;
+
+//    public PaymentService(PaymentRepository paymentRepository, UserRepository userRepository, SubscriptionRepository subscriptionRepository, RoomRepository roomRepository, PayOSService payOSService, PayOSProperties payOSProperties, ObjectMapper objectMapper) {
+//        this.paymentRepository = paymentRepository;
+//        this.userRepository = userRepository;
+//        this.subscriptionRepository = subscriptionRepository;
+//        this.roomRepository = roomRepository;
+//        this.payOSService = payOSService;
+//        this.payOSProperties = payOSProperties;
+//        this.objectMapper = objectMapper;
+//    }
 
     /**
-     * Tạo thanh toán VietQR
+     * Tạo thanh toán PayOS
      *
-     * @param request - Thông tin thanh toán
-     * @return VietQRPaymentResponse - Response chứa QR code
+     * @param request - Thông tin thanh toán PayOS
+     * @return PayOSPaymentResponse - Response chứa URL liên kết thanh toán PayOS
      */
     @Transactional
-    public VietQRPaymentResponse createVietQRPayment(VietQRPaymentRequest request) {
-        // Lấy user hiện tại từ SecurityContext
+    public PayOSPaymentResponse createPayOSPayment(PayOSPaymentRequest request) {
         User currentUser = getCurrentUser();
-
-        // Tạo mã giao dịch unique
-        String transactionCode = generateTransactionCode();
 
         // Tạo Payment entity
         Payment payment = new Payment();
         payment.setUser(currentUser);
-        payment.setAmount(request.getAmount());
-        payment.setPaymentMethod(PaymentMethod.VIETQR.name());
-        payment.setTransactionCode(transactionCode);
+        payment.setAmount(BigDecimal.valueOf(request.getAmount()));
+        payment.setPaymentMethod(PaymentMethod.PAYOS.name());
         payment.setStatus(PaymentStatus.PENDING.name());
         payment.setCreatedAt(LocalDateTime.now());
 
-        // Nếu có subscriptionId, set subscription
-        if (request.getSubscriptionId() != null) {
-            Subscription subscription = subscriptionRepository.findById(request.getSubscriptionId())
-                    .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_NOT_FOUND));
-            payment.setSubscription(subscription);
-        }
-
-        // Lưu payment
-        Payment savedPayment = paymentRepository.save(payment);
-
-        // Tạo description
-        String description = request.getDescription() != null
-                ? request.getDescription()
-                : "Thanh toan TroUni";
-
-        // Generate VietQR
-        String qrCodeBase64 = vietQRService.generateVietQRBase64(
-                request.getAmount(),
-                description,
-                transactionCode
-        );
-
-        String qrCodeUrl = vietQRService.generateVietQRUrl(
-                request.getAmount(),
-                description,
-                transactionCode
-        );
-
-        // Get bank info
-        Map<String, String> bankInfo = vietQRService.getBankInfo();
-
-        // Build response
-        VietQRPaymentResponse response = VietQRPaymentResponse.builder()
-                .paymentId(savedPayment.getId())
-                .transactionCode(transactionCode)
-                .amount(request.getAmount())
-                .status(PaymentStatus.PENDING)
-                .qrCodeUrl(qrCodeUrl)
-                .description(description)
-                .createdAt(savedPayment.getCreatedAt())
-                .expiresAt(LocalDateTime.now().plusMinutes(15)) // QR code hết hạn sau 15 phút
-                .bankAccountNumber(bankInfo.get("accountNumber"))
-                .bankAccountName(bankInfo.get("accountName"))
-                .bankName(bankInfo.get("bankName"))
-                .build();
-
-        log.info("Created VietQR payment for user: {}, transaction: {}",
-                currentUser.getUsername(), transactionCode);
-
-        return response;
-    }
-
-    /**
-     * Tạo thanh toán VietQR cho một phòng
-     *
-     * @param request - Thông tin thanh toán phòng
-     * @return VietQRPaymentResponse - Response chứa QR code
-     */
-    @Transactional
-    public VietQRPaymentResponse createRoomPayment(RoomPaymentRequest request) {
-        User currentUser = getCurrentUser();
-
-        // Kiểm tra phòng có tồn tại không
-        Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
-
-        // Kiểm tra số tiền thanh toán có khớp với giá phòng không
-//        if (request.getAmount()) {
-//            throw new AppException(PaymentErrorCode.PAYMENT_AMOUNT_INVALID);
+//        if (request.getSubscriptionId() != null) {
+//            Subscription subscription = subscriptionRepository.findById(request.getSubscriptionId())
+//                    .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+//            payment.setSubscription(subscription);
 //        }
 
-        // Tạo mã giao dịch unique
-        String transactionCode = generateTransactionCode();
+        if (request.getRoomId() != null) {
+            Room room = roomRepository.findById(request.getRoomId())
+                    .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
+            payment.setRoom(room);
+        }
 
-        // Tạo Payment entity
-        Payment payment = new Payment();
-        payment.setUser(currentUser);
-        payment.setAmount(request.getAmount());
-        payment.setPaymentMethod(PaymentMethod.VIETQR.name());
-        payment.setTransactionCode(transactionCode);
-        payment.setStatus(PaymentStatus.PENDING.name());
-        payment.setCreatedAt(LocalDateTime.now());
-        payment.setRoom(room); // Set the room for the payment
-
-        // Lưu payment
-        Payment savedPayment = paymentRepository.save(payment);
-
-        // Tạo description
-        String description = request.getDescription() != null
+        String descriptionForPayOS = request.getDescription() != null
                 ? request.getDescription()
-                : "Thanh toan phong " + room.getTitle();
+                : "Thanh toan TroUni qua PayOS";
 
-        // Generate VietQR
-//        String qrCodeBase64 = vietQRService.generateVietQRBase64(
-//                request.getAmount(),
-//                description,
-//                transactionCode
-//        );
-
-        String qrCodeUrl = vietQRService.generateVietQRUrl(
-                request.getAmount(),
-                description,
-                transactionCode
-        );
-
-        // Get bank info
-        Map<String, String> bankInfo = vietQRService.getBankInfo();
-
-        // Build response
-        VietQRPaymentResponse response = VietQRPaymentResponse.builder()
-                .paymentId(savedPayment.getId())
-                .transactionCode(transactionCode)
-                .amount(request.getAmount())
-                .status(PaymentStatus.PENDING)
-                .qrCodeUrl(qrCodeUrl)
-                .description(description)
-                .createdAt(savedPayment.getCreatedAt())
-                .expiresAt(LocalDateTime.now().plusMinutes(15)) // QR code hết hạn sau 15 phút
-                .bankAccountNumber(bankInfo.get("accountNumber"))
-                .bankAccountName(bankInfo.get("accountName"))
-                .bankName(bankInfo.get("bankName"))
+        CreatePaymentRequestServiceDto createPaymentRequestServiceDto = CreatePaymentRequestServiceDto.builder()
+                .productName(descriptionForPayOS)
+                .description(descriptionForPayOS)
+                .price(request.getAmount().longValue())
+                .returnUrl(request.getReturnUrl())
+                .cancelUrl(request.getCancelUrl())
                 .build();
 
-        log.info("Created VietQR payment for room: {}, user: {}, transaction: {}",
-                room.getId(), currentUser.getUsername(), transactionCode);
+        CreatePaymentLinkResponse payOSResponse = payOSService.createPaymentLink(createPaymentRequestServiceDto);
+        String checkoutUrl = payOSResponse.getCheckoutUrl();
+
+        // Lấy orderCode từ phản hồi của PayOS và lưu vào transactionCode
+        String payosOrderCode = String.valueOf(payOSResponse.getOrderCode());
+        payment.setTransactionCode(payosOrderCode);
+
+        Payment savedPayment = paymentRepository.save(payment);
+
+        PayOSPaymentResponse response = PayOSPaymentResponse.builder()
+                .paymentId(savedPayment.getId())
+                .transactionCode(payosOrderCode)
+                .amount(request.getAmount())
+                .status(PaymentStatus.PENDING)
+                .checkoutUrl(checkoutUrl)
+                .description(descriptionForPayOS)
+                .createdAt(savedPayment.getCreatedAt())
+                .expiresAt(LocalDateTime.now().plusMinutes(15)) // PayOS link typically expires in 15 minutes
+                .build();
+
+        log.info("Created PayOS payment for user: {}, transaction: {}",
+                currentUser.getUsername(), payosOrderCode);
 
         return response;
+    }
+
+    public PayOSWebhookRequest validateAndParsePayOSWebhook(String rawRequestBody) {
+        log.debug("Starting validateAndParsePayOSWebhook. Raw body: {}", rawRequestBody);
+        try {
+            // Verify webhook signature and get verified data from PayOS SDK
+            WebhookData payosVerifiedWebhookData = payOSService.verifyWebhook(rawRequestBody);
+            log.info("PayOS webhook signature verified for orderCode: {}", payosVerifiedWebhookData.getOrderCode());
+
+            // Directly convert the verified WebhookData from PayOS SDK to the flattened PayOSWebhookRequest DTO
+            PayOSWebhookRequest payOSWebhookRequest = objectMapper.convertValue(payosVerifiedWebhookData, PayOSWebhookRequest.class);
+
+            return payOSWebhookRequest;
+        } catch (Exception e) {
+            log.error("Error validating PayOS webhook: {}", e.getMessage());
+            throw new AppException(PaymentErrorCode.PAYMENT_PROCESSING_FAILED);
+        }
     }
 
     /**
@@ -214,18 +166,19 @@ public class PaymentService {
      * @param request - Thông tin từ webhook
      * @return PaymentResponse - Payment đã được cập nhật
      */
-
-    /**
-     * Xác nhận thanh toán qua webhook
-     *
-     * @param request - Thông tin từ webhook
-     * @return PaymentResponse - Payment đã được cập nhật
-     */
     @Transactional
-    public PaymentResponse confirmPayment(PaymentWebhookRequest request) {
+    public PaymentResponse confirmPayment(PayOSWebhookRequest request) {
+        log.debug("Starting confirmPayment for orderCode: {}", request.getOrderCode());
+
         // Tìm payment theo transaction code
-        Payment payment = paymentRepository.findByTransactionCode(request.getTransactionCode())
-                .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+        String transactionCodeToSearch = String.valueOf(request.getOrderCode());
+        log.info("Searching for payment with transactionCode: {}", transactionCodeToSearch);
+        Payment payment = paymentRepository.findByTransactionCode(transactionCodeToSearch)
+                .orElseThrow(() -> {
+                    log.error("Payment not found for transactionCode: {}", transactionCodeToSearch);
+                    return new AppException(PaymentErrorCode.PAYMENT_NOT_FOUND);
+                });
+        log.info("Payment found: {} for transactionCode: {}", payment.getId(), transactionCodeToSearch);
 
         // Kiểm tra payment đã được xử lý chưa
         // Nếu đã hoàn thành, thất bại hoặc bị hủy, không xử lý lại
@@ -241,7 +194,14 @@ public class PaymentService {
         }
 
         // Cập nhật status dựa trên trạng thái từ webhook
-        PaymentStatus newStatus = PaymentStatus.valueOf(request.getStatus().toUpperCase());
+        PaymentStatus newStatus;
+        if ("00".equals(request.getCode())) {
+            newStatus = PaymentStatus.COMPLETED;
+        } else if ("CANCELLED".equals(request.getStatus())) { // Sử dụng trường status mới
+            newStatus = PaymentStatus.CANCELLED;
+        } else {
+            newStatus = PaymentStatus.FAILED;
+        }
 
         switch (newStatus) {
             case COMPLETED:
@@ -267,6 +227,12 @@ public class PaymentService {
                         payment.getTransactionCode(),
                         payment.getUser().getUsername());
                 break;
+            case FAILED:
+                payment.setStatus(PaymentStatus.FAILED.name());
+                log.warn("Payment confirmed as FAILED: {}, user: {}",
+                        payment.getTransactionCode(),
+                        payment.getUser().getUsername());
+                break;
             case CANCELLED:
                 payment.setStatus(PaymentStatus.CANCELLED.name());
                 // If this payment was for a room, set the room status back to 'available'
@@ -274,7 +240,7 @@ public class PaymentService {
                     Room roomToUpdate = payment.getRoom();
                     roomToUpdate.setStatus("available");
                     roomRepository.save(roomToUpdate);
-                    log.info("Room {} status set back to 'available' due to payment cancellation.", roomToUpdate.getId());
+                    log.warn("Room {} status set back to 'available' due to payment cancellation.", roomToUpdate.getId());
                 }
                 log.warn("Payment confirmed as CANCELLED: {}, user: {}",
                         payment.getTransactionCode(),
@@ -283,7 +249,7 @@ public class PaymentService {
             default:
                 // Nếu webhook gửi trạng thái không mong muốn hoặc PENDING, giữ nguyên trạng thái hiện tại
                 log.warn("Received unexpected webhook status '{}' for transaction {}. Keeping current status '{}'.",
-                        request.getStatus(), request.getTransactionCode(), payment.getStatus());
+                        request.getCode(), request.getOrderCode(), payment.getStatus());
                 break;
         }
 
@@ -362,15 +328,44 @@ public class PaymentService {
         return PaymentResponse.fromPayment(updatedPayment);
     }
 
+    @Transactional
+    public PaymentResponse handlePayOSCancel(String transactionCode, String status) {
+        log.info("Handling PayOS cancel for transactionCode: {}, status: {}", transactionCode, status);
+
+        Payment payment = paymentRepository.findByTransactionCode(transactionCode)
+                .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+
+        if (PaymentStatus.CANCELLED.name().equals(payment.getStatus())) {
+            log.warn("Payment {} is already CANCELLED. No further action needed.", transactionCode);
+            return PaymentResponse.fromPayment(payment);
+        }
+
+        if ("CANCELLED".equalsIgnoreCase(status)) {
+            payment.setStatus(PaymentStatus.CANCELLED.name());
+            // If this payment was for a room, set the room status back to 'available'
+            if (payment.getRoom() != null) {
+                Room roomToUpdate = payment.getRoom();
+                roomToUpdate.setStatus("available");
+                roomRepository.save(roomToUpdate);
+                log.warn("Room {} status set back to 'available' due to payment cancellation.", roomToUpdate.getId());
+            }
+            log.info("Payment {} status updated to CANCELLED.", transactionCode);
+        } else {
+            log.warn("PayOS cancel callback received with status: {} for transactionCode: {}. No status change performed.", status, transactionCode);
+        }
+
+        Payment updatedPayment = paymentRepository.save(payment);
+        return PaymentResponse.fromPayment(updatedPayment);
+    }
+
     /**
      * Generate unique transaction code
      */
     private String generateTransactionCode() {
         String code;
         do {
-            code = "TRO" + System.currentTimeMillis();
+            code = String.valueOf(System.currentTimeMillis());
         } while (paymentRepository.existsByTransactionCode(code));
-
         return code;
     }
 
