@@ -1,6 +1,6 @@
 package com.trouni.tro_uni.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trouni.tro_uni.config.PayOSProperties;
 import com.trouni.tro_uni.dto.request.payment.PayOSPaymentRequest;
@@ -38,7 +38,7 @@ import vn.payos.model.webhooks.WebhookData;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -210,20 +210,14 @@ public class PaymentService {
                 if (payment.getSubscription() != null) {
                     updateSubscription(payment.getSubscription());
                 }
-                log.info("Payment confirmed as COMPLETED: {}, user: {}",
-                        payment.getTransactionCode(),
-                        payment.getUser().getUsername());
-                break;
-            case PROCESSING:
-                payment.setStatus(PaymentStatus.PROCESSING.name());
                 // If this payment is for a room, set the room status to 'rented'
                 if (payment.getRoom() != null) {
                     Room roomToUpdate = payment.getRoom();
                     roomToUpdate.setStatus("rented");
                     roomRepository.save(roomToUpdate);
-                    log.info("Room {} status set to 'rented' due to payment processing.", roomToUpdate.getId());
+                    log.info("Room {} status set to 'rented' due to payment completion.", roomToUpdate.getId());
                 }
-                log.info("Payment status updated to PROCESSING: {}, user: {}",
+                log.info("Payment confirmed as COMPLETED: {}, user: {}",
                         payment.getTransactionCode(),
                         payment.getUser().getUsername());
                 break;
