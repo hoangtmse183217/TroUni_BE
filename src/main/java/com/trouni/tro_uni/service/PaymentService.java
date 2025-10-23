@@ -207,9 +207,9 @@ public class PaymentService {
             case COMPLETED:
                 payment.setStatus(PaymentStatus.COMPLETED.name());
                 // Nếu có subscription, cập nhật subscription
-                if (payment.getSubscription() != null) {
-                    updateSubscription(payment.getSubscription());
-                }
+//                if (payment.getSubscription() != null) {
+//                    updateSubscription(payment.getSubscription());
+//                }
                 // If this payment is for a room, set the room status to 'rented'
                 if (payment.getRoom() != null) {
                     Room roomToUpdate = payment.getRoom();

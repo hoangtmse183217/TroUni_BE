@@ -14,6 +14,8 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
 
+import static java.util.Collections.singletonList;
+
 
 @Slf4j
 @Service
@@ -47,7 +49,7 @@ public class PayOSService {
                     .orderCode(orderCode)
                     .description(request.getDescription())
                     .amount(request.getPrice())
-                    .items(java.util.Collections.singletonList(item))
+                    .items(singletonList(item))
                     .returnUrl(request.getReturnUrl())
                     .cancelUrl(request.getCancelUrl())
                     .build();

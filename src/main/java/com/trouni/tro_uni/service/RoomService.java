@@ -203,26 +203,38 @@ public class RoomService {
         room.setUpdatedAt(LocalDateTime.now());
 
         // Xử lý ảnh từ List<String> → RoomImage
-        List<RoomImage> savedImages = request.getImages().stream()
-                .map(url -> {
-                    RoomImage image = new RoomImage();
-                    image.setImageUrl(url);
-                    image.setPrimary(false);
-                    image.setRoom(room);
-                    return roomImageRepository.save(image);
-                })
-                .collect(Collectors.toList());
-        room.setImages(savedImages);
+        // Xóa tất cả ảnh cũ
+        roomImageRepository.deleteAll(room.getImages());
+        room.getImages().clear();
+
+        // Thêm ảnh mới
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<RoomImage> newImages = request.getImages().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(url -> {
+                        RoomImage image = new RoomImage();
+                        image.setImageUrl(url);
+                        image.setPrimary(false);
+                        image.setRoom(room);
+                        return image;
+                    })
+                    .collect(Collectors.toList());
+            room.setImages(newImages);
+            roomImageRepository.saveAll(newImages);
+        }
 
         // ✅ Xử lý tiện ích từ AmenityRequest → Amenity
-        List<MasterAmenity> savedAmenities = new ArrayList<>();
-        for (MasterAmenityRequest amenityRequest : request.getAmenities()) {
-            MasterAmenity amenity = new MasterAmenity();
-            amenity.setName(amenityRequest.getName());
-            amenity.setIconUrl(amenityRequest.getIcon());
-            savedAmenities.add(masterAmenityRepository.save(amenity));
+        // Xóa tất cả tiện ích cũ
+        room.getAmenities().clear();
+
+        // Thêm tiện ích mới
+        if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
+            List<MasterAmenity> newAmenities = request.getAmenities().stream()
+                    .filter(dto -> dto != null && dto.getName() != null && !dto.getName().trim().isEmpty())
+                    .map(dto -> getOrCreateMasterAmenity(dto.getName(), dto.getIcon()))
+                    .collect(Collectors.toList());
+            room.setAmenities(newAmenities);
         }
-        room.setAmenities(savedAmenities);
 
         Room updatedRoom = roomRepository.save(room);
         log.info("Updated room with ID: {} by user: {}", roomId, currentUser.getUsername());
@@ -322,26 +334,24 @@ public class RoomService {
     private MasterAmenity getOrCreateMasterAmenity(String name, String iconUrl) {
         String amenityName = name.trim();
 
-        // Check if amenity already exists by name
         Optional<MasterAmenity> existingAmenity = masterAmenityRepository.findByName(amenityName);
         if (existingAmenity.isPresent()) {
+            MasterAmenity amenity = existingAmenity.get();
+            // Update iconUrl if it's different
+            if (!amenity.getIconUrl().equals(iconUrl)) {
+                amenity.setIconUrl(iconUrl);
+                return masterAmenityRepository.save(amenity);
+            }
             log.info("Using existing MasterAmenity: {}", amenityName);
-            return existingAmenity.get();
+            return amenity;
         } else {
             // Create new amenity only if it doesn't exist
-            try {
-                log.info("Creating new MasterAmenity: {}", amenityName);
-                MasterAmenity amenity = new MasterAmenity();
-                amenity.setName(amenityName);
-                amenity.setIconUrl(iconUrl);
-                amenity.setActive(true);
-                return masterAmenityRepository.save(amenity);
-            } catch (DataIntegrityViolationException e) {
-                // Handle case where amenity was created by another thread
-                log.warn("MasterAmenity '{}' was created by another process, retrieving existing one", amenityName);
-                return masterAmenityRepository.findByName(amenityName)
-                        .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
-            }
+            log.info("Creating new MasterAmenity: {}", amenityName);
+            MasterAmenity amenity = new MasterAmenity();
+            amenity.setName(amenityName);
+            amenity.setIconUrl(iconUrl);
+            amenity.setActive(true);
+            return masterAmenityRepository.save(amenity);
         }
     }
 
