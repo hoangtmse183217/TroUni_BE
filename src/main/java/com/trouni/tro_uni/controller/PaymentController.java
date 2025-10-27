@@ -172,6 +172,37 @@ public class PaymentController {
     }
 
     /**
+     * Lấy tất cả lịch sử thanh toán với phân trang (dành cho Admin)
+     *
+     * @param pageable - Thông tin phân trang
+     * @return Page<PaymentResponse>
+     */
+    @GetMapping("/all/paginated")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<PaymentResponse>> getAllPaymentsPaginated(Pageable pageable) {
+
+        log.info("Getting all paginated payment history for admin");
+        Page<PaymentResponse> response = paymentService.getAllPaymentsPaginated(pageable);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy tất cả lịch sử thanh toán (dành cho Admin)
+     *
+     * @return List<PaymentResponse>
+     */
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<PaymentResponse>> getAllPayments() {
+
+        log.info("Getting all payment history for admin");
+        List<PaymentResponse> response = paymentService.getAllPayments();
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Hủy thanh toán
      *
      * @param paymentId - ID của payment cần hủy

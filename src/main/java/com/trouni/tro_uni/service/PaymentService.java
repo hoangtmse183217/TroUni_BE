@@ -296,6 +296,24 @@ public class PaymentService {
     }
 
     /**
+     * Lấy tất cả lịch sử thanh toán với phân trang (dành cho Admin)
+     */
+    public Page<PaymentResponse> getAllPaymentsPaginated(Pageable pageable) {
+        Page<Payment> payments = paymentRepository.findAll(pageable);
+        return payments.map(PaymentResponse::fromPayment);
+    }
+
+    /**
+     * Lấy tất cả lịch sử thanh toán (dành cho Admin)
+     */
+    public List<PaymentResponse> getAllPayments() {
+        List<Payment> payments = paymentRepository.findAll();
+        return payments.stream()
+                .map(PaymentResponse::fromPayment)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Hủy thanh toán
      */
     @Transactional
