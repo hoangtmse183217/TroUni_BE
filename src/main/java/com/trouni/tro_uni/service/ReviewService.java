@@ -18,6 +18,7 @@ import com.trouni.tro_uni.repository.RoomRepository;
  import lombok.extern.slf4j.Slf4j;
  import org.springframework.stereotype.Service;
 
+ import java.time.LocalDateTime;
  import java.util.ArrayList;
  import java.util.List;
  import java.util.Objects;
@@ -61,6 +62,8 @@ import com.trouni.tro_uni.repository.RoomRepository;
                  .room(room)
                  .score(request.getScore())
                  .comment(request.getComment())
+                 .createdAt(LocalDateTime.now())
+                 .updatedAt(LocalDateTime.now())
                  .build();
 
          Review savedReview = reviewRepository.save(review);
@@ -132,4 +135,17 @@ import com.trouni.tro_uni.repository.RoomRepository;
          reviewRepository.delete(review);
          log.info("User '{}' deleted review ID '{}'", currentUser.getUsername(), reviewId);
      }
+
+     /*
+      * Get all reviews for admin.
+      *
+      * @return List<ReviewResponse> - A list of all reviews.
+      */
+     public List<ReviewResponse> getAllReviewsForAdmin() {
+         log.info("Retrieving all reviews for admin access.");
+         List<Review> reviews = reviewRepository.findAll();
+         return reviews.stream()
+                 .map(ReviewResponse::fromReview)
+                 .collect(Collectors.toList());
      }
+ }
