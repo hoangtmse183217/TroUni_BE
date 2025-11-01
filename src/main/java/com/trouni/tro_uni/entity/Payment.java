@@ -31,6 +31,11 @@ public class Payment {
     @JoinColumn(name = "subscription_id") // Can be null if it's a one-time purchase like manual boost
     @JsonIgnore // Tránh circular reference khi serialize JSON
     private Subscription subscription;
+
+    @ManyToOne
+    @JoinColumn(name = "room_id") // Can be null if it's a payment for a room
+    @JsonIgnore // Tránh circular reference khi serialize JSON
+    private Room room;
     
     @Column(precision = 12, nullable = false)
     private BigDecimal amount;

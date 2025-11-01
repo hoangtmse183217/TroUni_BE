@@ -30,7 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -138,6 +140,10 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
+        if ("deleted".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
+        }
+
         room.setViewCount(room.getViewCount() + 1);
         roomRepository.save(room);
 
@@ -177,8 +183,8 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
-        if (!room.getOwner().getId().equals(currentUser.getId())) {
-            throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
+        if ("deleted".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
         }
 
         // Cập nhật thông tin cơ bản
@@ -197,26 +203,38 @@ public class RoomService {
         room.setUpdatedAt(LocalDateTime.now());
 
         // Xử lý ảnh từ List<String> → RoomImage
-        List<RoomImage> savedImages = request.getImages().stream()
-                .map(url -> {
-                    RoomImage image = new RoomImage();
-                    image.setImageUrl(url);
-                    image.setPrimary(false);
-                    image.setRoom(room);
-                    return roomImageRepository.save(image);
-                })
-                .collect(Collectors.toList());
-        room.setImages(savedImages);
+        // Xóa tất cả ảnh cũ
+        roomImageRepository.deleteAll(room.getImages());
+        room.getImages().clear();
+
+        // Thêm ảnh mới
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<RoomImage> newImages = request.getImages().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(url -> {
+                        RoomImage image = new RoomImage();
+                        image.setImageUrl(url);
+                        image.setPrimary(false);
+                        image.setRoom(room);
+                        return image;
+                    })
+                    .collect(Collectors.toList());
+            room.setImages(newImages);
+            roomImageRepository.saveAll(newImages);
+        }
 
         // ✅ Xử lý tiện ích từ AmenityRequest → Amenity
-        List<MasterAmenity> savedAmenities = new ArrayList<>();
-        for (MasterAmenityRequest amenityRequest : request.getAmenities()) {
-            MasterAmenity amenity = new MasterAmenity();
-            amenity.setName(amenityRequest.getName());
-            amenity.setIconUrl(amenityRequest.getIcon());
-            savedAmenities.add(masterAmenityRepository.save(amenity));
+        // Xóa tất cả tiện ích cũ
+        room.getAmenities().clear();
+
+        // Thêm tiện ích mới
+        if (request.getAmenities() != null && !request.getAmenities().isEmpty()) {
+            List<MasterAmenity> newAmenities = request.getAmenities().stream()
+                    .filter(dto -> dto != null && dto.getName() != null && !dto.getName().trim().isEmpty())
+                    .map(dto -> getOrCreateMasterAmenity(dto.getName(), dto.getIcon()))
+                    .collect(Collectors.toList());
+            room.setAmenities(newAmenities);
         }
-        room.setAmenities(savedAmenities);
 
         Room updatedRoom = roomRepository.save(room);
         log.info("Updated room with ID: {} by user: {}", roomId, currentUser.getUsername());
@@ -234,7 +252,7 @@ public class RoomService {
                 .orElseThrow(() -> new AppException(RoomErrorCode.ROOM_NOT_FOUND));
 
         // Kiểm tra xem phòng có public không
-        if (!"available".equalsIgnoreCase(room.getStatus())) {
+        if (!"available".equalsIgnoreCase(room.getStatus()) && !"rented".equalsIgnoreCase(room.getStatus())) {
             throw new AppException(RoomErrorCode.ROOM_NOT_FOUND); // Coi như không tìm thấy
         }
 
@@ -251,7 +269,7 @@ public class RoomService {
      */
     @Transactional(readOnly = true)
     public List<RoomResponse> getRoomByUserId(UUID userId) {
-        List<Room> rooms = roomRepository.findByOwnerId(userId);
+        List<Room> rooms = roomRepository.findByOwnerIdAndStatusNot(userId, "deleted");
 
         if (rooms.isEmpty()) {
             throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
@@ -279,8 +297,9 @@ public class RoomService {
             throw new AppException(RoomErrorCode.NOT_ROOM_OWNER);
         }
 
-        roomRepository.delete(room);
-        log.info("Deleted room with ID: {} by user: {}", roomId, currentUser.getUsername());
+        room.setStatus("deleted");
+        roomRepository.save(room);
+        log.info("Soft deleted room with ID: {} by user: {}", roomId, currentUser.getUsername());
     }
 
     /**
@@ -291,7 +310,8 @@ public class RoomService {
      * @return Page<RoomResponse> - Paginated list of rooms
      */
     public Page<RoomResponse> getAllRooms(Pageable pageable) {
-        return roomRepository.findByStatus("available", pageable)
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("createdAt").descending());
+        return roomRepository.findByStatusNot("deleted", sortedPageable)
                 .map(RoomResponse::fromRoom);
     }
 
@@ -301,7 +321,7 @@ public class RoomService {
      * @return List of RoomResponse containing all rooms
      */
     public List<RoomResponse> getAllRooms() {
-        return roomRepository.findAll().stream()
+        return roomRepository.findByStatusNot("deleted").stream()
                 .map(RoomResponse::fromRoom)
                 .collect(Collectors.toList());
     }
@@ -314,26 +334,24 @@ public class RoomService {
     private MasterAmenity getOrCreateMasterAmenity(String name, String iconUrl) {
         String amenityName = name.trim();
 
-        // Check if amenity already exists by name
         Optional<MasterAmenity> existingAmenity = masterAmenityRepository.findByName(amenityName);
         if (existingAmenity.isPresent()) {
+            MasterAmenity amenity = existingAmenity.get();
+            // Update iconUrl if it's different
+            if (!amenity.getIconUrl().equals(iconUrl)) {
+                amenity.setIconUrl(iconUrl);
+                return masterAmenityRepository.save(amenity);
+            }
             log.info("Using existing MasterAmenity: {}", amenityName);
-            return existingAmenity.get();
+            return amenity;
         } else {
             // Create new amenity only if it doesn't exist
-            try {
-                log.info("Creating new MasterAmenity: {}", amenityName);
-                MasterAmenity amenity = new MasterAmenity();
-                amenity.setName(amenityName);
-                amenity.setIconUrl(iconUrl);
-                amenity.setActive(true);
-                return masterAmenityRepository.save(amenity);
-            } catch (DataIntegrityViolationException e) {
-                // Handle case where amenity was created by another thread
-                log.warn("MasterAmenity '{}' was created by another process, retrieving existing one", amenityName);
-                return masterAmenityRepository.findByName(amenityName)
-                        .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
-            }
+            log.info("Creating new MasterAmenity: {}", amenityName);
+            MasterAmenity amenity = new MasterAmenity();
+            amenity.setName(amenityName);
+            amenity.setIconUrl(iconUrl);
+            amenity.setActive(true);
+            return masterAmenityRepository.save(amenity);
         }
     }
 
@@ -371,7 +389,7 @@ public class RoomService {
     @Transactional(readOnly = true)
     public List<RoomListItemResponse> getPublicRooms() {
         // Chỉ lấy các phòng có status "available" từ database
-        List<Room> publicRooms = roomRepository.findByStatus("available");
+        List<Room> publicRooms = roomRepository.findByStatusOrderByCreatedAtDesc("available");
         return publicRooms.stream()
                 .map(this::toRoomListItemResponse)
                 .collect(Collectors.toList());

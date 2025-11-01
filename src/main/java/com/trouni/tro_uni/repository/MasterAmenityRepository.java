@@ -13,10 +13,12 @@ import java.util.UUID;
 @Repository
 public interface MasterAmenityRepository extends JpaRepository<MasterAmenity, UUID> {
     
+
     Optional<MasterAmenity> findByName(String name);
 
     @Query("SELECT ma FROM MasterAmenity ma JOIN ma.rooms r WHERE r.id = :roomId")
     List<MasterAmenity> findByRoomId(@Param("roomId") UUID roomId);
-    
+
     boolean existsByName(String name);
+
 }

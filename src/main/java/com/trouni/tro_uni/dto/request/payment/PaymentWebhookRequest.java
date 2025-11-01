@@ -26,4 +26,5 @@ public class PaymentWebhookRequest {
     String bankCode;
 
 //    String timestamp;
+
 }

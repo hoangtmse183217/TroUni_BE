@@ -26,6 +26,8 @@ public class PaymentResponse {
 
     UUID subscriptionId;
 
+    UUID roomId;
+
     BigDecimal amount;
 
     PaymentMethod paymentMethod;
@@ -44,6 +46,7 @@ public class PaymentResponse {
                 .id(payment.getId())
                 .userId(payment.getUser().getId())
                 .subscriptionId(payment.getSubscription() != null ? payment.getSubscription().getId() : null)
+                .roomId(payment.getRoom() != null ? payment.getRoom().getId() : null)
                 .amount(payment.getAmount())
                 .paymentMethod(PaymentMethod.valueOf(payment.getPaymentMethod()))
                 .transactionCode(payment.getTransactionCode())

@@ -144,4 +144,27 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("REVIEW_DELETION_FAILED", "Failed to delete review!"));
         }
     }
+
+    /**
+     * API to get all reviews for admin.
+     * <p>
+     * Endpoint: GET /api/v1/reviews/admin
+     * <p>
+     * Headers:
+     * Authorization: Bearer <JWT_TOKEN>
+     * <p>
+     * @return ResponseEntity - Response containing the list of all reviews.
+     */
+    @GetMapping()
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<ReviewResponse>>> getAllReviewsForAdmin() {
+        try {
+            List<ReviewResponse> reviews = reviewService.getAllReviewsForAdmin();
+            return ResponseEntity.ok(ApiResponse.success("Reviews retrieved successfully!", reviews));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getErrorCode(), e.getErrorMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("REVIEW_RETRIEVAL_FAILED", "Failed to retrieve reviews!"));
+        }
+    }
 }

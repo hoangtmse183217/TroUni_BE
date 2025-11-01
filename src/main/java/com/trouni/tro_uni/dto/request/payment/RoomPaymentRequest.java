@@ -1,0 +1,33 @@
+package com.trouni.tro_uni.dto.request.payment;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+/**
+ * RoomPaymentRequest - Request để tạo thanh toán cho một phòng
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class RoomPaymentRequest {
+
+    @NotNull(message = "Room ID is required")
+    UUID roomId;
+
+    @NotNull(message = "Amount is required")
+    @Positive(message = "Amount must be positive")
+    BigDecimal amount;
+
+    String description;
+}

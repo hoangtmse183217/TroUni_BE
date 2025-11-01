@@ -12,10 +12,10 @@ package com.trouni.tro_uni.enums;
  * - CASH: Tiền mặt
  */
 public enum PaymentMethod {
-    VIETQR,         // VietQR
     MOMO,           // MoMo
     ZALOPAY,        // ZaloPay
     VNPAY,          // VNPay
     BANK_TRANSFER,  // Chuyển khoản
-    CASH            // Tiền mặt
+    CASH,           // Tiền mặt
+    PAYOS           // PayOS
 }

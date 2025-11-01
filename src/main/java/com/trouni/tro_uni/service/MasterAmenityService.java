@@ -68,7 +68,6 @@ public class MasterAmenityService {
         // Fetch all amenities and convert to response DTOs
         List<MasterAmenity> amenities = masterAmenityRepository.findAll();
         return amenities.stream()
-                        .filter(Objects::nonNull)
                         .map(MasterAmenityResponse::fromMasterAmenity)
                         .collect(Collectors.toList());
     }
@@ -80,7 +79,7 @@ public class MasterAmenityService {
      * @return List of MasterAmenityResponse containing amenities for the specified room
      * @throws AppException if the room with the given ID does not exist
      */
-    public List<MasterAmenityResponse> getMasterAmenities(UUID roomId) {
+       public List<MasterAmenityResponse> getMasterAmenities(UUID roomId) {
         // Validate that the room exists
         if (!roomRepository.existsById(roomId)) {
             throw new AppException(RoomErrorCode.ROOM_NOT_FOUND);
@@ -105,9 +104,13 @@ public class MasterAmenityService {
      * @throws AppException if the amenity is not found or if another amenity with the new name already exists
      */
     public MasterAmenityResponse updateMasterAmenity(UUID amenityId, UpdateAmenityRequest request) {
-        // Find the existing amenity
         MasterAmenity amenity = masterAmenityRepository.findById(amenityId)
                 .orElseThrow(() -> new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND));
+
+//        if (!amenity.getActive()) {
+//            throw new AppException(MasterAmenityErrorCode.MASTER_AMENITY_NOT_FOUND);
+//        }
+
 
         // Check if another amenity with the new name already exists (only if name is being changed)
         if (!amenity.getName().equals(request.getName()) && masterAmenityRepository.existsByName(request.getName())) {
@@ -144,7 +147,8 @@ public class MasterAmenityService {
                 .orElseThrow(() -> new AppException(MasterAmenityErrorCode.NO_PERMISSION_TO_MODIFY_MASTER_AMENITY));
 
         // Delete the amenity from database
-        masterAmenityRepository.delete(amenity);
-        log.info("Deleted master amenity with ID: {}", amenityId);
+        amenity.setActive(false);
+        masterAmenityRepository.save(amenity);
+        log.info("Soft deleted master amenity with ID: {}", amenityId);
     }
 }
