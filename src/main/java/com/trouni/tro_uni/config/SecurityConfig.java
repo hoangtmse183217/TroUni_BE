@@ -96,7 +96,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Cho phép origin từ frontend
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5501"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5501","https://trouni.vercel.app"));
 
         // Cho phép tất cả các HTTP methods
         configuration.addAllowedMethod("*");

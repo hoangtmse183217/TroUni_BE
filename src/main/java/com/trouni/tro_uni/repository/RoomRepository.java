@@ -103,4 +103,11 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
 
     @Query("SELECT COUNT(r) FROM Room r WHERE r.owner.id = :ownerId")
     long countByOwnerId(@Param("ownerId") UUID ownerId);
+
+    List<Room> findByStatusOrderByCreatedAtDesc(String status);
+    List<Room> findByStatusNot(String status);
+
+    Page<Room> findByStatusNot(String status, Pageable pageable);
+
+    List<Room> findByOwnerIdAndStatusNot(UUID ownerId, String status);
 }
