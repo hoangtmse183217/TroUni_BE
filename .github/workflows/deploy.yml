@@ -66,7 +66,7 @@ jobs:
 
           # Triển khai dịch vụ Cloud Run
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,JWT_SIGNER_KEY=${{ secrets.JWT_SECRECT }},SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }},SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }},SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}" \
+            --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,JWT_SIGNER_KEY=${{ secrets.JWT_SECRECT }},SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }},SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }},SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }},BIN=${{ secrets.BIN }},BANK_DISPLAY_NAME=${{ secrets.BANK_DISPLAY_NAME }},BANK_NAME=${{ secrets.BANK_NAME }},BANK_ACCOUNT=${{ secrets.BANK_ACCOUNT }},TEMPLATE=${{ secrets.TEMPLATE }},PAYOS_CHECKSUM_KEY=${{ secrets.PAYOS_CHECKSUM_KEY }},PAYOS_API_KEY=${{ secrets.PAYOS_API_KEY }},PAYOS_CLIENT_ID=${{ secrets.PAYOS_CLIENT_ID }}" \
             --image=$IMAGE_TAG \
             --platform=managed \
             --region=${{ env.REGION }} \

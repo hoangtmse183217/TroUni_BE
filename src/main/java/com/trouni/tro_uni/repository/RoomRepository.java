@@ -12,38 +12,39 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, UUID> {
 
     // ================== ORIGINAL SEARCH METHODS (from main branch) ==================
-
+    
     Page<Room> findByStatus(String status, Pageable pageable);
-
+    
     Page<Room> findByRoomType(RoomType roomType, Pageable pageable);
-
+    
     Page<Room> findByCityAndDistrict(String city, String district, Pageable pageable);
-
+    
     Page<Room> findByCity(String city, Pageable pageable);
-
+    
     @Query("SELECT r FROM Room r WHERE r.pricePerMonth >= :minPrice AND r.pricePerMonth <= :maxPrice")
-    Page<Room> findByPriceRange(@Param("minPrice") BigDecimal minPrice,
-                                @Param("maxPrice") BigDecimal maxPrice,
-                                Pageable pageable);
-
+    Page<Room> findByPriceRange(@Param("minPrice") BigDecimal minPrice, 
+                               @Param("maxPrice") BigDecimal maxPrice, 
+                               Pageable pageable);
+    
     @Query("SELECT r FROM Room r WHERE r.status = :status AND r.city = :city AND r.district = :district " +
-            "AND r.pricePerMonth >= :minPrice AND r.pricePerMonth <= :maxPrice")
+           "AND r.pricePerMonth >= :minPrice AND r.pricePerMonth <= :maxPrice")
     Page<Room> findByMultipleCriteria(@Param("status") String status,
-                                      @Param("city") String city,
-                                      @Param("district") String district,
-                                      @Param("minPrice") BigDecimal minPrice,
-                                      @Param("maxPrice") BigDecimal maxPrice,
-                                      Pageable pageable);
-
+                                    @Param("city") String city,
+                                    @Param("district") String district,
+                                    @Param("minPrice") BigDecimal minPrice,
+                                    @Param("maxPrice") BigDecimal maxPrice,
+                                    Pageable pageable);
+    
     @Query("SELECT COUNT(r) FROM Room r WHERE r.owner = :owner AND r.status = :status")
     long countByOwnerAndStatus(@Param("owner") User owner, @Param("status") String status);
-
+    
     List<Room> findTop10ByOrderByViewCountDesc();
 
     @Query("SELECT r FROM Room r WHERE " +
@@ -70,12 +71,35 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
     List<Room> findByStatus(String status);
 
     // ================== NEW METHODS (from nguyenvuong-dev branch) ==================
-
+    
     Page<Room> findByOwnerId(UUID ownerId, Pageable pageable);
-
+    
     List<Room> findByOwner(User owner);
-
+    
     List<Room> findByOwnerId(UUID ownerId);
+
+    // ================== NEW METHODS (from hoang branch) ==================
+
+    // Đếm tổng số phòng và số phòng đang hoạt động của một chủ nhà
+    long countByOwner(User owner);
+
+    // Tìm phòng theo ID và chủ sở hữu để xác thực quyền
+    Optional<Room> findByIdAndOwner(UUID id, User owner);
+    boolean existsByIdAndOwner(UUID id, User owner);
+
+    @Query("SELECT r.id, r.title, r.status, r.viewCount, SIZE(r.bookmarks), COALESCE(AVG(rev.score), 0.0) " +
+            "FROM Room r LEFT JOIN r.reviews rev " +
+            "WHERE r.owner.id = :ownerId " +
+            "GROUP BY r.id, r.title, r.status, r.viewCount " +
+            "ORDER BY r.createdAt DESC") // Thêm ORDER BY để danh sách có thứ tự mặc định
+    List<Object[]> findRoomPerformanceProjectionByOwnerAsList(@Param("ownerId") UUID ownerId);
+
+    // Lấy tổng số bookmark và rating trung bình của tất cả các phòng của chủ nhà
+    @Query("SELECT COUNT(b) FROM Bookmark b WHERE b.room.owner.id = :ownerId")
+    long countTotalBookmarksByOwner(@Param("ownerId") UUID ownerId);
+
+    @Query("SELECT COALESCE(AVG(rev.score), 0.0) FROM Review rev WHERE rev.room.owner.id = :ownerId")
+    double findAverageRatingByOwner(@Param("ownerId") UUID ownerId);
 
     @Query("SELECT COUNT(r) FROM Room r WHERE r.owner.id = :ownerId")
     long countByOwnerId(@Param("ownerId") UUID ownerId);
