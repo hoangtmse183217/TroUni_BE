@@ -65,7 +65,7 @@ public class PayOSService {
     /**
      * Xác thực webhook từ PayOS
      *
-     * @param - webhookData - Dữ liệu webhook nhận được
+     * @param webhookData - Dữ liệu webhook nhận được
      * @return boolean - true nếu webhook hợp lệ, false nếu không
      */
     public vn.payos.model.webhooks.WebhookData verifyWebhook(String rawRequestBody) {

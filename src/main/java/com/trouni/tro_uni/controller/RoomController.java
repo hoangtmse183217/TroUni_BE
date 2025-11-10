@@ -136,8 +136,8 @@ public class RoomController {
             @PathVariable UUID userId
     ) {
         try {
-            RoomResponse room = (RoomResponse) roomService.getRoomByUserId(userId);
-            return ResponseEntity.ok(ApiResponse.success("Room details retrieved successfully", room));
+            List<RoomResponse> rooms = roomService.getRoomByUserId(userId);
+            return ResponseEntity.ok(ApiResponse.success("Room details retrieved successfully", rooms));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("GET_ROOM_ERROR", "Failed to get room details: " + e.getMessage()));
